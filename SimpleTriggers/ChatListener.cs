@@ -1,5 +1,4 @@
 using System;
-
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
@@ -35,6 +34,11 @@ internal class ChatListener : IDisposable
             var expression = trig.expression;
             if(msgStr.Contains(expression, StringComparison.CurrentCultureIgnoreCase))
             {
+                if(trig.doResponseTTS && (trig.response.Length > 0))
+                {
+                    plugin.TestTTS(trig.response);
+                }
+                
                 if(trig.doPlaySound && trig.soundFx > 0)
                 {
                     PlaySound.Play(SoundsExtensions.FromIdx(trig.soundFx));
@@ -44,14 +48,14 @@ internal class ChatListener : IDisposable
                 {
                     chatGui.Print(trig.response, $"{plugin.Name}", 529);
                 }
+
             }
         }
 
-        while(plugin.chatLog.Count > plugin.logMaxSize)
+        while(plugin.ChatLog.Count >= plugin.Configuration.MaxLogHistory)
         {
-            plugin.chatLog.Dequeue();
+            plugin.ChatLog.Dequeue();
         }
-        plugin.chatLog.Enqueue(message);
+        plugin.ChatLog.Enqueue(message);
     }
-
 }

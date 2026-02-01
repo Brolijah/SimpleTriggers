@@ -3,28 +3,26 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using SimpleTriggers.Windows;
-using System.Collections.Generic;
 using Dalamud.Game.Text.SeStringHandling;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Diagnostics;
+using SimpleTriggers.Windows;
+using SimpleTriggers.TextToSpeech;
+using System.Threading.Tasks;
 
 namespace SimpleTriggers;
 
 public sealed class Plugin : IDalamudPlugin
 {
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
-    //[PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
-    //[PluginService] internal static IClientState ClientState { get; private set; } = null!;
-    //[PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
-    //[PluginService] internal static IDataManager DataManager { get; private set; } = null!;
-    //[PluginService] internal static IPluginLog Log { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
 
     public string Name => "Simple Triggers";
     private const string CommandPrefixA = "/simpletriggers";
     private const string CommandPrefixB = "/strig";
-
+    public uint MaxLogHistoryCeiling = 10000;
 
     public Configuration Configuration { get; init; }
 
@@ -32,15 +30,23 @@ public sealed class Plugin : IDalamudPlugin
     //private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
     private ChatListener ChatListener { get; init; }
-    internal Queue<SeString> chatLog { get; init; }
-    internal int logMaxSize = 512;
+    internal Queue<SeString> ChatLog { get; init; }
+    private ST_Kokoro StKokoro { get; init; }
+
+    //private ST_eSpeakNG tts_espeak { get; init; }
     
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        // TODO: Configuration validation
+        if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
         ChatListener = new ChatListener(this, ChatGui);
-        chatLog = [];
+        ChatLog = [];
 
+        StKokoro = new ST_Kokoro(PluginInterface.AssemblyLocation.Directory?.FullName!);
+        //tts_espeak = new ST_eSpeakNG("/usr/bin/espeak-ng");
+
+        SwapTTSBackend(Configuration.TTSProvider);
         // You might normally want to embed resources and load them from the manifest stream
         //var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
@@ -105,7 +111,38 @@ public sealed class Plugin : IDalamudPlugin
             // TODO: Parse arguments
         }
     }
+
+    internal void SwapTTSBackend(TextToSpeechType ttst)
+    {
+        //tts_espeak.Stop();
+        switch (this.Configuration.TTSProvider)
+        {
+            case TextToSpeechType.eSpeakNG:
+                //tts_espeak.Start();
+                break;
+            // TODO: The others...
+        }
+    }
     
+    internal void TestTTS(string message)
+    {
+        switch (this.Configuration.TTSProvider)
+        {
+            case TextToSpeechType.eSpeakNG:
+                Task.Run(() => Process.Start("/usr/bin/espeak-ng",$"\"{message}\""));
+                //tts_espeak.Speak(message);
+                break;
+            case TextToSpeechType.flite:
+                Task.Run(() => Process.Start("/usr/bin/flite", $"-t \"{message}\""));
+                break;
+            case TextToSpeechType.Kokoro:
+                StKokoro.Speak(message);
+                break;
+            default:
+                break;
+        }
+    }
+
     public void ToggleConfigUi() => MainWindow.Toggle();
     public void ToggleMainUi() => MainWindow.Toggle();
 }
