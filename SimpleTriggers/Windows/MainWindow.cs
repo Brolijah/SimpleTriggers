@@ -83,6 +83,7 @@ public class MainWindow : Window, IDisposable
         TriggerEntry editing = new TriggerEntry(trigRef);
 
         // Text box for the expression to match
+        ImGui.AlignTextToFramePadding();
         ImGui.Text("Text to Match:   ");
         ImGui.SameLine();
         // We must not allow the expression to be blank
@@ -92,6 +93,7 @@ public class MainWindow : Window, IDisposable
             updateConfig = true;
         }
         // Text box for the response to give back to the player
+        ImGui.AlignTextToFramePadding();
         ImGui.Text("Response Text: ");
         ImGui.SameLine();
         if(ImGui.InputText("##ResponseTextBox", ref editing.response, 128, ImGuiInputTextFlags.EnterReturnsTrue))
@@ -118,7 +120,7 @@ public class MainWindow : Window, IDisposable
             ImGui.PushFont(UiBuilder.IconFont);
             if(ImGui.Button($"{FontAwesomeIcon.Play.ToIconString()}##TestPlayTTS"))
             {
-                plugin.TestTTS(editing.response);
+                plugin.SpeakTTS(editing.response);
             }
             ImGui.PopFont();
         }
@@ -129,6 +131,7 @@ public class MainWindow : Window, IDisposable
             updateConfig = true;
         }
 
+        // If the above is toggled on, renders a drop-down selection for SoundFX and a Test button
         if(editing.doPlaySound)
         {
             ImGui.SameLine();
@@ -147,8 +150,7 @@ public class MainWindow : Window, IDisposable
                 {
                     if(ImGui.Selectable($"Sound{i+1:00}"))
                     {
-                        editing.soundFx = i+1;
-                        trigRef.soundFx = editing.soundFx;
+                        trigRef.soundFx = editing.soundFx = i+1;
                         updateConfig = true;
                     }
                 }
@@ -161,26 +163,36 @@ public class MainWindow : Window, IDisposable
             plugin.Configuration.Save();
         }
 
+        if(ImGui.Button("Add New"))
+        {
+            AddTrigger(trigRef);
+            selectedTriggerIndex = plugin.Configuration.Triggers.Count-1;
+            activeTrigger = plugin.Configuration.Triggers.ElementAt(selectedTriggerIndex);
+        }
+        ImGui.SameLine();
+        if(ImGui.Button("Remove"))
+        {
+            RemoveTrigger(selectedTriggerIndex);
+            selectedTriggerIndex = -1;
+            activeTrigger = null;
+        }
 
+        ImGui.AlignTextToFramePadding();
+        ImGui.Text("Filter: ");
+        ImGui.SameLine();
+        trigFilter.Draw("##TriggerFilter", 180);
+        ImGui.SameLine();
+        if(ImGui.Button("\uE04C")) { trigFilter.Clear(); }
+
+        ImGui.SameLine(ImGui.GetWindowWidth()-125);
         if(ImGui.Button("Clear All Triggers")
             && ImGui.GetIO().KeyShift)
         {
             ClearAllTriggers();
         }
         ImGuiCustom.HoverTooltip("Hold SHIFT to Clear All");
-        ImGui.SameLine();
-        if(ImGui.Button("Add New"))
-        {
-            AddTrigger(trigRef);
-        }
 
-        ImGui.Text("Search: ");
-        ImGui.SameLine();
-        trigFilter.Draw("##TriggerFilter", 180);
-        ImGui.SameLine();
-        if(ImGui.Button("\uE04C")) { trigFilter.Clear(); }
         ImGui.Separator();
-
         using (var child = ImRaii.Child("TriggerBoxWithScrollbar", Vector2.Zero, true))
         {
             var removeIndex = -1;
@@ -199,7 +211,7 @@ public class MainWindow : Window, IDisposable
                     if(ImGui.BeginPopupContextItem("SaveMsgToTriggerPopup"))
                     {
                         selectedTriggerIndex = id;
-                        if(ImGui.MenuItem("Delete Trigger"))
+                        if(ImGui.MenuItem("Remove Trigger"))
                         {
                             removeIndex = id;
                             selectedTriggerIndex = -1;
@@ -225,11 +237,14 @@ public class MainWindow : Window, IDisposable
 
     private void DrawChatLogTab()
     {
-        if(ImGui.Button("Clear Log")) { ClearLog(); selectedChatIndex = -1; }
+        ImGui.AlignTextToFramePadding();
+        ImGui.Text("Filter: ");
         ImGui.SameLine();
         chatFilter.Draw("##ChatFilter", 180);
         ImGui.SameLine();
         if(ImGui.Button("\uE04C")) { chatFilter.Clear(); }
+        ImGui.SameLine();
+        if(ImGui.Button("Clear Log")) { ClearLog(); selectedChatIndex = -1; }
         ImGui.Separator();
 
         using (var child = ImRaii.Child("ChatBoxWithScrollBar", Vector2.Zero, true))
@@ -273,29 +288,74 @@ public class MainWindow : Window, IDisposable
 
     private void DrawSettingsTab()
     {
-        ImGui.Text($"How many entries should the chat history keep saved? (Max {plugin.MaxLogHistoryCeiling})");
-        ImGui.SetNextItemWidth(120);
-        ImGui.DragScalar<uint>("Max Log History##MaxHistoryLength",
-            ref plugin.Configuration.MaxLogHistory,0.2f,0, plugin.MaxLogHistoryCeiling,default,ImGuiSliderFlags.AlwaysClamp);
-        if(ImGui.IsItemDeactivatedAfterEdit())
+        if(ImGui.CollapsingHeader("General", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            plugin.Configuration.Save();
+            if(ImGui.Checkbox("Enable All Triggers?", ref plugin.Configuration.EnableTriggers))
+            {
+                plugin.Configuration.Save();
+            }
+
+            ImGui.Text($"How many entries should the chat history keep saved? (Max {plugin.MaxLogHistoryCeiling})");
+            ImGui.SetNextItemWidth(120);
+            ImGui.DragScalar<uint>("Max Log History##MaxHistoryLength",
+                ref plugin.Configuration.MaxLogHistory,0.2f,0, plugin.MaxLogHistoryCeiling,default,ImGuiSliderFlags.AlwaysClamp);
+            if(ImGui.IsItemDeactivatedAfterEdit())
+            {
+                plugin.Configuration.Save();
+            }
+
+            ImGui.NewLine();
         }
         
-        ImGui.SetNextItemWidth(120);
-        using (var box = ImRaii.Combo("Text-to-Speech Provider", TTSProviders.ToName(plugin.Configuration.TTSProvider))) 
+        if(ImGui.CollapsingHeader("Text-to-Speech", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            if(box)
+            ImGui.SetNextItemWidth(120);
+            using (var box = ImRaii.Combo("Text-to-Speech Provider", TTSProviders.ToName(plugin.Configuration.TTSProvider))) 
             {
-                for(var i = 0; i < 4; ++i)
+                if(box)
                 {
-                    if(ImGui.Selectable(TTSProviders.ToName((TextToSpeechType)i)))
+                    for(var i = 0; i < 4; ++i)
                     {
-                        plugin.Configuration.TTSProvider = (TextToSpeechType)i;
-                        plugin.Configuration.Save();
-                        plugin.SwapTTSBackend((TextToSpeechType)i);
+                        if(ImGui.Selectable(TTSProviders.ToName((TextToSpeechType)i)))
+                        {
+                            plugin.Configuration.TTSProvider = (TextToSpeechType)i;
+                            plugin.Configuration.Save();
+                            plugin.SwapTTSBackend((TextToSpeechType)i);
+                        }
                     }
                 }
+            }
+
+            if(plugin.Configuration.TTSProvider == TextToSpeechType.Kokoro)
+            {
+                ImGui.Indent();
+                ImGui.SetNextItemWidth(160);
+                using (var box = ImRaii.Combo("##KokoroVoiceBox", KokoroVoiceHelper.ToName(plugin.Configuration.TTSKokoroVoice), ImGuiComboFlags.HeightLarge))
+                {
+                    if(box)
+                    {
+                        for(var i = 0; i < Enum.GetNames(typeof(KokoroVoiceKind)).Length; ++i)
+                        {
+                            if(ImGui.Selectable(KokoroVoiceHelper.ToName((KokoroVoiceKind)i)))
+                            {
+                                plugin.Configuration.TTSKokoroVoice = (KokoroVoiceKind)i;
+                                plugin.Configuration.Save();
+                                plugin.SwapKokoroVoice(KokoroVoiceHelper.ToString((KokoroVoiceKind)i));
+                            }
+                        }
+                    }
+                }
+
+                ImGui.SameLine();
+                ImGui.PushFont(UiBuilder.IconFont);
+                if(ImGui.Button($"{FontAwesomeIcon.Play.ToIconString()}"))
+                {
+                    plugin.SpeakTTS("This is a test of the Kokoro voice.");
+                }
+                ImGui.PopFont();
+                ImGui.SameLine();
+                ImGui.Text("Test Voice");
+                ImGui.Unindent();
             }
         }
     }

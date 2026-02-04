@@ -9,11 +9,10 @@ namespace SimpleTriggers;
 public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
-
+    public bool EnableTriggers = true;
     public uint MaxLogHistory = 500;
-    //public bool IsConfigWindowMovable { get; set; } = true;
-    //public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
     public TextToSpeechType TTSProvider = TextToSpeechType.None;
+    public KokoroVoiceKind TTSKokoroVoice = 0;
     public List<TriggerEntry> Triggers { get; set; } = [];
 
     // The below exists just to make saving less cumbersome

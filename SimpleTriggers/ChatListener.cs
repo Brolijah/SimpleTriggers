@@ -28,27 +28,29 @@ internal class ChatListener : IDisposable
         // Ignore messages sent from the plugin
         var msgStr = message.ToString();
         if(msgStr.StartsWith($"[{plugin.Name}]")) { return; }
-
-        foreach(var trig in plugin.Configuration.Triggers)
+        if(plugin.Configuration.EnableTriggers)
         {
-            var expression = trig.expression;
-            if(msgStr.Contains(expression, StringComparison.CurrentCultureIgnoreCase))
+            foreach(var trig in plugin.Configuration.Triggers)
             {
-                if(trig.doResponseTTS && (trig.response.Length > 0))
+                var expression = trig.expression;
+                if(msgStr.Contains(expression, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    plugin.TestTTS(trig.response);
-                }
-                
-                if(trig.doPlaySound && trig.soundFx > 0)
-                {
-                    PlaySound.Play(SoundsExtensions.FromIdx(trig.soundFx));
-                }
+                    if(trig.doResponseTTS && (trig.response.Length > 0))
+                    {
+                        plugin.SpeakTTS(trig.response);
+                    }
+                    
+                    if(trig.doPlaySound && trig.soundFx > 0)
+                    {
+                        PlaySound.Play(SoundsExtensions.FromIdx(trig.soundFx));
+                    }
 
-                if(trig.doPostInChat && (trig.response.Length > 0))
-                {
-                    chatGui.Print(trig.response, $"{plugin.Name}", 529);
-                }
+                    if(trig.doPostInChat && (trig.response.Length > 0))
+                    {
+                        chatGui.Print(trig.response, $"{plugin.Name}", 529);
+                    }
 
+                }
             }
         }
 

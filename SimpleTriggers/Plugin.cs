@@ -10,6 +10,7 @@ using System.Diagnostics;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using System.Threading.Tasks;
+using System;
 
 namespace SimpleTriggers;
 
@@ -22,7 +23,7 @@ public sealed class Plugin : IDalamudPlugin
     public string Name => "Simple Triggers";
     private const string CommandPrefixA = "/simpletriggers";
     private const string CommandPrefixB = "/strig";
-    public uint MaxLogHistoryCeiling = 10000;
+    public uint MaxLogHistoryCeiling = 10000; // Hard coded limit. Who says? Me says.
 
     public Configuration Configuration { get; init; }
 
@@ -30,10 +31,8 @@ public sealed class Plugin : IDalamudPlugin
     //private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
     private ChatListener ChatListener { get; init; }
+    private STKokoro StKokoro { get; init; }
     internal Queue<SeString> ChatLog { get; init; }
-    private ST_Kokoro StKokoro { get; init; }
-
-    //private ST_eSpeakNG tts_espeak { get; init; }
     
     public Plugin()
     {
@@ -43,8 +42,8 @@ public sealed class Plugin : IDalamudPlugin
         ChatListener = new ChatListener(this, ChatGui);
         ChatLog = [];
 
-        StKokoro = new ST_Kokoro(PluginInterface.AssemblyLocation.Directory?.FullName!);
-        //tts_espeak = new ST_eSpeakNG("/usr/bin/espeak-ng");
+        StKokoro = new STKokoro(PluginInterface.AssemblyLocation.Directory?.FullName!);
+        StKokoro.SetVoice(KokoroVoiceHelper.ToString(Configuration.TTSKokoroVoice));
 
         SwapTTSBackend(Configuration.TTSProvider);
         // You might normally want to embed resources and load them from the manifest stream
@@ -59,12 +58,12 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandPrefixA, new CommandInfo(OnCommand)
         {
-            HelpMessage = "A useful message to display in /xlhelp"
+            HelpMessage = "Opens the Simple Triggers window."
         });
 
         CommandManager.AddHandler(CommandPrefixB, new CommandInfo(OnCommand)
         {
-            HelpMessage = "A useful message to display in /xlhelp"
+            HelpMessage = "Opens the Simple Triggers window."
         });
 
         // Tell the UI system that we want our windows to be drawn through the window system
@@ -95,6 +94,7 @@ public sealed class Plugin : IDalamudPlugin
         //ConfigWindow.Dispose();
         MainWindow.Dispose();
         ChatListener.Dispose();
+        StKokoro.Dispose();
 
         CommandManager.RemoveHandler(CommandPrefixA);
         CommandManager.RemoveHandler(CommandPrefixB);
@@ -103,18 +103,26 @@ public sealed class Plugin : IDalamudPlugin
     private void OnCommand(string command, string args)
     {
         // In response to the slash command, toggle the display status of our main ui
-        if (args.Length == 0)
+        var argArr = args.Trim().Split(" ");
+        switch (argArr[0])
         {
-            MainWindow.Toggle();
-        } else
-        {
-            // TODO: Parse arguments
+            case "enable":
+                Configuration.EnableTriggers = true;
+                Configuration.Save();
+            break;
+            case "disable":
+                Configuration.EnableTriggers = false;
+                Configuration.Save();
+            break;
+
+            default:
+                MainWindow.Toggle();
+            break;
         }
     }
 
     internal void SwapTTSBackend(TextToSpeechType ttst)
     {
-        //tts_espeak.Stop();
         switch (this.Configuration.TTSProvider)
         {
             case TextToSpeechType.eSpeakNG:
@@ -123,23 +131,30 @@ public sealed class Plugin : IDalamudPlugin
             // TODO: The others...
         }
     }
-    
-    internal void TestTTS(string message)
+
+    internal void SwapKokoroVoice(string voice)
     {
-        switch (this.Configuration.TTSProvider)
+        StKokoro.SetVoice(voice);
+    }
+    
+    internal void SpeakTTS(string message)
+    {
+        if(message.Length > 0)
         {
-            case TextToSpeechType.eSpeakNG:
-                Task.Run(() => Process.Start("/usr/bin/espeak-ng",$"\"{message}\""));
-                //tts_espeak.Speak(message);
-                break;
-            case TextToSpeechType.flite:
-                Task.Run(() => Process.Start("/usr/bin/flite", $"-t \"{message}\""));
-                break;
-            case TextToSpeechType.Kokoro:
-                StKokoro.Speak(message);
-                break;
-            default:
-                break;
+            switch (this.Configuration.TTSProvider)
+            {
+                case TextToSpeechType.eSpeakNG:
+                    Task.Run(() => Process.Start("/usr/bin/espeak-ng",$"\"{message}\""));
+                    break;
+                case TextToSpeechType.flite:
+                    Task.Run(() => Process.Start("/usr/bin/flite", $"-t \"{message}\""));
+                    break;
+                case TextToSpeechType.Kokoro:
+                    StKokoro.Speak(message);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 

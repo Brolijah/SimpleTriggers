@@ -3,9 +3,10 @@ namespace SimpleTriggers.TextToSpeech;
 public enum TextToSpeechType : byte
 {
     None = 0,
+    Kokoro,
+    WindowsSystem,
     eSpeakNG,
-    flite,
-    Kokoro
+    flite
 }
 
 public static class TTSProviders
@@ -14,11 +15,12 @@ public static class TTSProviders
     {
         return ttst switch
         {
-            TextToSpeechType.None     => "None",
-            TextToSpeechType.eSpeakNG => "espeak-ng",
-            TextToSpeechType.flite    => "flite",
-            TextToSpeechType.Kokoro   => "Kokoro",
-            _                         => ""
+            TextToSpeechType.None           => "None",
+            TextToSpeechType.Kokoro         => "Kokoro",
+            TextToSpeechType.WindowsSystem  => "Windows System",
+            TextToSpeechType.eSpeakNG       => "espeak-ng",
+            TextToSpeechType.flite          => "flite",
+            _                               => ""
         };
     }
 }

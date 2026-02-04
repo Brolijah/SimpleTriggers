@@ -1,8 +1,8 @@
 {
   "Author": "Brolijah",
   "Name": "Simple Triggers",
-  "Punchline": "A short one-liner that shows up in /xlplugins.",
-  "Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
+  "Punchline": "For those of us too lazy to read their screens.",
+  "Description": "This plugin allows you to create custom responses to in-game messages.\nOptions include responding through in-game chat, in-game sound effects, and even Text-to-Speech.",
   "ApplicableVersion": "any",
   "Tags": [
     "chat",
