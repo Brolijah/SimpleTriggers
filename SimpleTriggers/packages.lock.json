@@ -16,11 +16,11 @@
       },
       "KokoroSharp.CPU": {
         "type": "Direct",
-        "requested": "[0.6.2, )",
-        "resolved": "0.6.2",
-        "contentHash": "lnTPKG+4MjJyrdOMdcWVSsP0XJHjJWjrF2EsGVTNU7IZprco/kAgc9Kt54yXjwBkcitijPBuQVSX/4X9yWRgiQ==",
+        "requested": "[0.6.5, )",
+        "resolved": "0.6.5",
+        "contentHash": "5oVsm6A4R9wzHTpbBoTZhgeCAzMGBbemNotivlGdJsy46c1glKmdaetGYE6lcJLVXJXwybzs4vaMWucgZuWZhg==",
         "dependencies": {
-          "KokoroSharp": "0.6.2",
+          "KokoroSharp": "0.6.5",
           "Microsoft.ML.OnnxRuntime": "1.22.0"
         }
       },
@@ -32,8 +32,8 @@
       },
       "KokoroSharp": {
         "type": "Transitive",
-        "resolved": "0.6.2",
-        "contentHash": "QLWeps8SQIg5VUe8aJwzIiUpNuYecJnCxWXykV2ER3b3o5kACH6rUuQm1QCPuL1spW1gwZnb5PLQ58NuLQ8CDw==",
+        "resolved": "0.6.5",
+        "contentHash": "bm0qtxpxi2+R9zmFNApezl3OvB96EIwD8jIh8zJJjiwY1haOeOt7mqWRWaxYdjSAseMpKx8ODSRvUszD2TID6A==",
         "dependencies": {
           "Microsoft.ML.OnnxRuntime.Managed": "1.22.0",
           "NAudio": "2.2.1",

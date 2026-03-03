@@ -39,6 +39,13 @@ public class STKokoro : ITextToSpeech, IDisposable
     public void SetVolume(float volume)
     {
         this.volume = volume/100.0f;
+        try
+        {
+            kp.SetVolume(this.volume);
+        } catch (Exception e)
+        {
+            Log.Error($"[Simple Triggers]: STKokoro.SetVolume(): Exception caught: {e.Message}");
+        }
     }
 
     public void SetSpeed(float speed)
@@ -55,10 +62,9 @@ public class STKokoro : ITextToSpeech, IDisposable
             kp.StopPlayback();
             kp.SetVolume(volume);
             tts.EnqueueJob(KokoroJob.Create(tokens, kv, speed, kp.Enqueue));
-            //Task.Run(() => {Thread.Sleep(400); kp.SetVolume(volume);}); // lol... no (please)
         } catch (Exception e)
         {
-            Log.Error($"[Simple Triggers]: Exception caught: {e.Message}");
+            Log.Error($"[Simple Triggers]: STKokoro.Speak(): Exception caught: {e.Message}");
         }
     }
 
