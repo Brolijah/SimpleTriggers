@@ -40,7 +40,7 @@ public class STKokoro : ITextToSpeech, IDisposable
     {
         bool download = false;
         var path = GetModelPath();
-        if(Path.Exists(GetModelPath())) // if the model file exists on disk
+        if(Path.Exists(path)) // if the model file exists on disk
         {
             var hash = SHA256.HashData(await File.ReadAllBytesAsync(path));
             if(!(Convert.ToHexStringLower(hash) == "c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204"))
@@ -66,7 +66,7 @@ public class STKokoro : ITextToSpeech, IDisposable
             Log.Debug("[Simple Triggers]: Kokoro model download completed");
         }
 
-        return KokoroTTS.LoadModel(GetModelPath());
+        return KokoroTTS.LoadModel(path);
     }
 
     private bool TryGetKokoroTTS([NotNullWhen(true)] out KokoroTTS? tts)
