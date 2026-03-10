@@ -1,7 +1,7 @@
 ﻿
 <Project Sdk="Dalamud.NET.Sdk/14.0.1">
   <PropertyGroup>
-    <Version>0.0.0.6</Version>
+    <Version>0.0.0.7</Version>
     <PackageProjectUrl>https://github.com/Brolijah/DalamudTestBench</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
@@ -9,13 +9,6 @@
     <NoWarn>CA1416</NoWarn>
     <UserSecretsId>26c766c0-5518-43ee-95f1-02cdef301d15</UserSecretsId>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="..\Data\kokoro-quant.onnx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-    </Content>
-  </ItemGroup>
 
   <ItemGroup>
     <Content Include="..\Data\en_US.txt">

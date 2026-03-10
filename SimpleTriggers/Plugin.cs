@@ -9,6 +9,7 @@ using System.Diagnostics;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using System.Threading.Tasks;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 
 namespace SimpleTriggers;
 
@@ -21,7 +22,7 @@ public sealed class Plugin : IDalamudPlugin
     public string Name => "Simple Triggers";
     private const string CommandPrefixA = "/simpletriggers";
     private const string CommandPrefixB = "/strig";
-    public uint MaxLogHistoryCeiling = 10000; // Hard coded limit. Who says? Me says.
+    internal uint MaxLogHistoryCeiling = 10000; // Hard coded limit. Who says? Me says.
     internal bool doLogChatHistory = false; // transient value, must be enabled by the user
     public Configuration Configuration { get; init; }
 
@@ -130,7 +131,7 @@ public sealed class Plugin : IDalamudPlugin
                 //TextToSpeech = null;
                 break;
             case TextToSpeechType.Kokoro:
-                TextToSpeech = new STKokoro(PluginInterface.AssemblyLocation.Directory?.FullName!);
+                TextToSpeech = new STKokoro(PluginInterface.AssemblyLocation.Directory?.FullName!, PluginInterface.GetPluginConfigDirectory());
                 TextToSpeech.SetVoice(KokoroVoiceHelper.ToString(Configuration.TTSKokoroVoice));
                 TextToSpeech.SetSpeed(Configuration.TTSSpeed);
                 TextToSpeech.SetVolume(Configuration.TTSVolume);
@@ -153,7 +154,12 @@ public sealed class Plugin : IDalamudPlugin
         ChatGui.Print(message, $"{Name}", 529);
     }
 
-    internal void SwapTTSVoice(string voice)
+    internal bool CanSpeak()
+    {
+        return TextToSpeech?.IsInitialized() ?? false;
+    }
+
+    internal void SetTTSVoice(string voice)
     {
         TextToSpeech?.SetVoice(voice);
     }

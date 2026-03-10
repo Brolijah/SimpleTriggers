@@ -10,11 +10,9 @@ namespace SimpleTriggers.Phonetics {
     {
         private Dictionary<string, string> dictionary;
 
-        public IPA (string assemblyPath, string ipaDictionary) {
+        public IPA (string dictionaryPath) {
             dictionary = new Dictionary<string, string>(130000); // cheating a bit here
-            var resource = Path.Join(assemblyPath, ipaDictionary);
-
-            using(var stream = File.Open(resource, FileMode.Open))
+            using(var stream = File.Open(dictionaryPath, FileMode.Open))
             using(var reader = new StreamReader(stream)) {
                 string? line;
                 while ((line = reader.ReadLine()) != null) {

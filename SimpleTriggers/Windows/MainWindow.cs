@@ -369,6 +369,11 @@ public class MainWindow : Window, IDisposable
             ImGui.Indent();
             if(plugin.Configuration.TTSProvider == TextToSpeechType.Kokoro)
             {
+                if(!plugin.CanSpeak())
+                {
+                    ImGui.Text("Downloading model...");
+                }
+
                 ImGui.SetNextItemWidth(160);
                 using (var box = ImRaii.Combo("##KokoroVoiceBox", KokoroVoiceHelper.ToName(plugin.Configuration.TTSKokoroVoice), ImGuiComboFlags.HeightLarge))
                 {
@@ -380,7 +385,7 @@ public class MainWindow : Window, IDisposable
                             {
                                 plugin.Configuration.TTSKokoroVoice = (KokoroVoiceKind)i;
                                 plugin.Configuration.Save();
-                                plugin.SwapTTSVoice(KokoroVoiceHelper.ToString((KokoroVoiceKind)i));
+                                plugin.SetTTSVoice(KokoroVoiceHelper.ToString((KokoroVoiceKind)i));
                             }
                         }
                     }
