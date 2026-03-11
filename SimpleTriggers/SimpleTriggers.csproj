@@ -1,7 +1,9 @@
 ﻿
 <Project Sdk="Dalamud.NET.Sdk/14.0.1">
   <PropertyGroup>
-    <Version>0.0.0.7</Version>
+    <Version>0.1.0</Version>
+    <InformationalVersion>0.1.0-rc1</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PackageProjectUrl>https://github.com/Brolijah/DalamudTestBench</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>

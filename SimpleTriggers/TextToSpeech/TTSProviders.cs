@@ -5,8 +5,8 @@ public enum TextToSpeechType : byte
     None = 0,
     Kokoro,
     WindowsSystem,
-    eSpeakNG,
-    flite
+    //eSpeakNG,
+    //flite
 }
 
 public static class TTSProviders
@@ -18,8 +18,8 @@ public static class TTSProviders
             TextToSpeechType.None           => "None",
             TextToSpeechType.Kokoro         => "Kokoro",
             TextToSpeechType.WindowsSystem  => "Windows System",
-            TextToSpeechType.eSpeakNG       => "espeak-ng",
-            TextToSpeechType.flite          => "flite",
+            //TextToSpeechType.eSpeakNG       => "espeak-ng",
+            //TextToSpeechType.flite          => "flite",
             _                               => ""
         };
     }

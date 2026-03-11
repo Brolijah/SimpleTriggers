@@ -13,7 +13,7 @@ New Triggers can be created by either clicking the "Add New" button on the Trigg
 Chat logging is disabled by default every time the plugin starts, and once enabled you can search for specific messages it has recorded. This may be useful if you're unsure of the exact message you want to create a trigger for but only know some of the words. You can also configure how many messages should be stored at a time.
 Message history is never saved outside of the plugin running and is lost when the plugin is disabled.
 
-At this point in time, the suggested method for Text-to-Speech responses is to use Kokoro. If you're on Windows you will have the option using the System voice. Early versions also supports espeak and flite for testing purposes but these will be removed due to performance issues regarding `Process.Start()`
+At this point in time, the suggested method for Text-to-Speech responses is to use Kokoro. If you're on Windows you will have the option using the System voice. Windows System TTS isn't fully implemented yet.
 Kokoro may also have slight performance hits but in my personal testing it was barely noticeable (3-5 FPS hitches).
 
 * Commands: `/simpletriggers` or `/strig`
@@ -24,8 +24,7 @@ Kokoro may also have slight performance hits but in my personal testing it was b
 
 
 ## Known Issues
-* Kokoro may cause minor hitching. In my testing, this was near negligible (3-5 FPS).
-* espeak and flite cause major hitching, and are not recommended besides testing. This is tied to `Process.Start()`
+* Kokoro may cause minor hitching. In my testing, this was near negligible (3-5 FPS). It seems to be related to playing the sound wave. Needs further investigation.
 * There seems to be a ~20 MB memory leak with Kokoro during destruction. Unclear of the root cause. If you find out please let me know!
 
 ## Credits

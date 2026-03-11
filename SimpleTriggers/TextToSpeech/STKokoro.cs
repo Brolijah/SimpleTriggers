@@ -23,13 +23,14 @@ public class STKokoro : ITextToSpeech, IDisposable
     private IPA ipa;
     private KokoroVoice kv;
     private KokoroPlayback kp;
+    private KokoroJob? lastJob;
     public STKokoro(string binPath, string configPath)
     {
         this.configPath = configPath;
         ipa = new IPA(Path.Join(binPath, "en_US.txt"));
 
-        //Tokenizer.eSpeakNGPath = Path.Join(binPath, "espeak");
         ttsTask = LoadModelAsync();
+        Tokenizer.eSpeakNGPath = Path.Join(binPath, "espeak");
         KokoroVoiceManager.LoadVoicesFromPath(Path.Join(binPath,"voices"));
         kv = KokoroVoiceManager.GetVoice("af_bella");
         kp = new KokoroPlayback();
@@ -115,9 +116,10 @@ public class STKokoro : ITextToSpeech, IDisposable
             {
                 var phonemes = ipa.EnglishToIPA(message);
                 var tokens = Tokenizer.TokenizePhonemes(phonemes.ToCharArray());
+                lastJob?.Cancel();
                 kp.StopPlayback();
                 kp.SetVolume(volume);
-                tts.EnqueueJob(KokoroJob.Create(tokens, kv, speed, kp.Enqueue));
+                lastJob = tts.EnqueueJob(KokoroJob.Create(tokens, kv, speed, kp.Enqueue));
             } catch (Exception e)
             {
                 Log.Error($"[Simple Triggers]: STKokoro.Speak(): Exception caught: {e.Message}");

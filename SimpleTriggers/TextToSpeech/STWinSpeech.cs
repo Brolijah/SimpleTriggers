@@ -1,19 +1,29 @@
+using System;
 using System.Speech.Synthesis;
 
-public class STWindows : ITextToSpeech
+public class STWinSpeech : ITextToSpeech
 {
-    //private float volume = 1.0f;
-    //private float speed = 1.0f;
     private SpeechSynthesizer synth {get; init;}
-    public STWindows()
+    public STWinSpeech()
     {
         synth = new SpeechSynthesizer();
         synth.SetOutputToDefaultAudioDevice();
     }
 
-    public void Dispose()
+    public void SetVoice(string voice)
+    { }
+
+    public void SetVolume(float volume)
     {
-        //throw new System.NotImplementedException();
+        synth.Volume = (int)Math.Clamp(volume, 0, 100);
+    }
+
+    public void SetSpeed(float speed)
+    { }
+ 
+    public void Speak(string message)
+    {
+        synth.SpeakAsync(message);
     }
 
     public bool IsInitialized()
@@ -21,20 +31,8 @@ public class STWindows : ITextToSpeech
         return true;
     }
 
-    public void SetVoice(string voice)
+    public void Dispose()
     {
-        //throw new System.NotImplementedException();
-    }
-
-    public void SetVolume(float volume)
-    { }
-
-    public void SetSpeed(float speed)
-    { }
-
-    public void Speak(string message)
-    {
-        //throw new System.NotImplementedException();
-        synth.SpeakAsync(message);
+        synth.Dispose();
     }
 }

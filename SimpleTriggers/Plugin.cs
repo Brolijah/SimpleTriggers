@@ -5,11 +5,9 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Diagnostics;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using System.Threading.Tasks;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 
 namespace SimpleTriggers;
 
@@ -44,7 +42,7 @@ public sealed class Plugin : IDalamudPlugin
         SwapTTSBackend(Configuration.TTSProvider);
         // You might normally want to embed resources and load them from the manifest stream
         //var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
+        var version = GetInformationalVersion();
 
         //ConfigWindow = new ConfigWindow(this);
         MainWindow = new MainWindow(this, version);
@@ -71,11 +69,12 @@ public sealed class Plugin : IDalamudPlugin
 
         // Adds another button doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
+    }
 
-        // Add a simple message to the log with level set to information
-        // Use /xllog to open the log window in-game
-        // Example Output: 00:57:54.959 | INF | [SamplePlugin] ===A cool log message from Sample Plugin===
-        //Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
+    public string GetInformationalVersion()
+    {
+        var ifv = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+        return ifv?.InformationalVersion.ToString() ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
     }
 
     public void Dispose()
@@ -126,10 +125,6 @@ public sealed class Plugin : IDalamudPlugin
 
         switch (Configuration.TTSProvider)
         {
-            case TextToSpeechType.None:
-                //TextToSpeech?.Dispose();
-                //TextToSpeech = null;
-                break;
             case TextToSpeechType.Kokoro:
                 TextToSpeech = new STKokoro(PluginInterface.AssemblyLocation.Directory?.FullName!, PluginInterface.GetPluginConfigDirectory());
                 TextToSpeech.SetVoice(KokoroVoiceHelper.ToString(Configuration.TTSKokoroVoice));
@@ -137,31 +132,16 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetVolume(Configuration.TTSVolume);
                 break;
             case TextToSpeechType.WindowsSystem:
-                TextToSpeech = new STWindows();
+                TextToSpeech = new STWinSpeech();
                 TextToSpeech.SetSpeed(Configuration.TTSSpeed);
                 TextToSpeech.SetVolume(Configuration.TTSVolume);
                 break;
-            case TextToSpeechType.eSpeakNG:
-            case TextToSpeechType.flite:
-                //tts_espeak.Start();
-                break;
-            // TODO: The others...
         }
     }
 
     internal void PrintChatMsg(string message)
     {
         ChatGui.Print(message, $"{Name}", 529);
-    }
-
-    internal bool CanSpeak()
-    {
-        return TextToSpeech?.IsInitialized() ?? false;
-    }
-
-    internal void SetTTSVoice(string voice)
-    {
-        TextToSpeech?.SetVoice(voice);
     }
     
     internal void SpeakTTS(string message)
@@ -170,12 +150,13 @@ public sealed class Plugin : IDalamudPlugin
         {
             switch (Configuration.TTSProvider)
             {
-                case TextToSpeechType.eSpeakNG:
+                /* case TextToSpeechType.eSpeakNG:
                     Task.Run(() => Process.Start("/usr/bin/espeak-ng",$"\"{message}\""));
                     break;
                 case TextToSpeechType.flite:
                     Task.Run(() => Process.Start("/usr/bin/flite", $"-t \"{message}\""));
                     break;
+                */
                 case TextToSpeechType.Kokoro:
                 case TextToSpeechType.WindowsSystem:
                     Task.Run(() => TextToSpeech?.Speak(message));
@@ -186,8 +167,10 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
+    internal void SetTTSVoice(string voice) => TextToSpeech?.SetVoice(voice);
     internal void SetTTSVolume(float volume) => TextToSpeech?.SetVolume(volume);
     internal void SetTTSSpeed(float speed) => TextToSpeech?.SetSpeed(speed);
+    internal bool CanSpeak() => TextToSpeech?.IsInitialized() ?? false;
 
     public void ToggleConfigUi() => MainWindow.Toggle();
     public void ToggleMainUi() => MainWindow.Toggle();
