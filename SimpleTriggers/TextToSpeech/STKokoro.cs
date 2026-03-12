@@ -18,7 +18,7 @@ public class STKokoro : ITextToSpeech
     // sha256 = c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204
     private const string ModelUri = "https://github.com/taylorchu/kokoro-onnx/releases/download/v0.2.0/kokoro-quant.onnx";
     private readonly string configPath;
-    private readonly Task<KokoroTTS> ttsTask;
+    private readonly Task<KokoroTTS?> ttsTask;
     private readonly CancellationTokenSource cts = new();
     private float volume = 1.0f;
     private float speed = 1.0f;
@@ -39,34 +39,40 @@ public class STKokoro : ITextToSpeech
         kp.Enqueue([]);
     }
 
-    private async Task<KokoroTTS> LoadModelAsync()
+    private async Task<KokoroTTS?> LoadModelAsync()
     {
         bool download = false;
         var path = GetModelPath();
-        if(Path.Exists(path)) // if the model file exists on disk
-        {
-            var hash = SHA256.HashData(await File.ReadAllBytesAsync(path, cts.Token));
-            if(!(Convert.ToHexStringLower(hash) == "c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204"))
+        try {
+            if(Path.Exists(path)) // if the model file exists on disk
             {
-                // mismatch, flag for download
-                File.Delete(path);
-                Log.Debug("[Simple Triggers]: KokoroTTS model mismatched hash, redownloading");
-                download = true;
-            } else { Log.Debug("[Simple Triggers]: KokoroTTS model already on disk. Using existing file."); }
-        } else { download = true; }
+                var hash = SHA256.HashData(await File.ReadAllBytesAsync(path, cts.Token));
+                if(!(Convert.ToHexStringLower(hash) == "c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204"))
+                {
+                    // mismatch, flag for download
+                    File.Delete(path);
+                    Log.Debug("[Simple Triggers]: KokoroTTS model mismatched hash, redownloading");
+                    download = true;
+                } else { Log.Debug("[Simple Triggers]: KokoroTTS model already on disk. Using existing file."); }
+            } else { download = true; }
 
-        if(download)
-        {
-            Log.Debug("[Simple Triggers]: Downloading KokoroTTS model...");
-            using var client = new HttpClient();
-            using var response = await client.GetAsync(ModelUri, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-            using var responseStream = await response.Content.ReadAsStreamAsync(cts.Token);
-            using(var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+            if(download)
             {
-                await responseStream.CopyToAsync(fileStream, cts.Token);
-                await fileStream.FlushAsync(cts.Token);
+                Log.Debug("[Simple Triggers]: Downloading KokoroTTS model...");
+                using var client = new HttpClient();
+                using var response = await client.GetAsync(ModelUri, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                using var responseStream = await response.Content.ReadAsStreamAsync(cts.Token);
+                using(var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await responseStream.CopyToAsync(fileStream, cts.Token);
+                    await fileStream.FlushAsync(cts.Token);
+                }
+                Log.Debug("[Simple Triggers]: Kokoro model download completed");
             }
-            Log.Debug("[Simple Triggers]: Kokoro model download completed");
+        } catch (Exception e)
+        {
+            Log.Error($"[Simple Triggers]: Exception caught: {e.Message}");
+            return null;
         }
 
         return KokoroTTS.LoadModel(path);
@@ -77,10 +83,9 @@ public class STKokoro : ITextToSpeech
         if(ttsTask.IsCompletedSuccessfully)
         {
             tts = ttsTask.Result;
-            return true;
-        }
-        tts = null;
-        return false;
+        } else { tts = null; }
+
+        return tts != null;
     }
 
     private string GetModelPath()
