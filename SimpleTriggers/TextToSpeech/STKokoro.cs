@@ -108,7 +108,7 @@ public class STKokoro : ITextToSpeech
                 kp.SetVolume(this.volume);
             } catch (Exception e)
             {
-                Log.Error($"[Simple Triggers]: STKokoro.SetVolume(): Exception caught: {e.Message}");
+                Log.Warning($"[Simple Triggers]: STKokoro.SetVolume(): Exception caught: {e.Message}");
             }
         }
     }
@@ -136,7 +136,7 @@ public class STKokoro : ITextToSpeech
                 Log.Error($"[Simple Triggers]: STKokoro.Speak(): Exception caught: {e.Message}");
             }
         } else {
-            Log.Error("[Simple Triggers]: STKokoro.Speak(): Attempted TTS before model loaded.");
+            Log.Warning("[Simple Triggers]: STKokoro.Speak(): Attempted TTS before model loaded.");
         }
     }
 
