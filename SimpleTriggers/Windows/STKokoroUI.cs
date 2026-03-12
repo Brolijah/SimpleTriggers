@@ -3,6 +3,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface;
 using SimpleTriggers.TextToSpeech;
+using SimpleTriggers.Gui;
 
 namespace SimpleTriggers.Windows;
 
@@ -53,6 +54,13 @@ public static class STKokoroUI
             plugin.SetTTSVolume(plugin.Configuration.TTSVolume);
             plugin.Configuration.Save();
         }
+
+        ImGui.Checkbox("Use espeak for phonemes?", ref plugin.Configuration.KokoroUseEspeak);
+        ImGui.SameLine();
+        ImGui.PushFont(UiBuilder.IconFont);
+        ImGui.Text($"{FontAwesomeIcon.ExclamationCircle.ToIconString()}");
+        ImGui.PopFont();
+        ImGuiCustom.HoverTooltip("May result in more natural voices, \nhowever if it causes issues, leave disabled.");
 
         // Information Text
         if(!plugin.CanSpeak())

@@ -108,14 +108,16 @@ public class STKokoro : ITextToSpeech, IDisposable
         this.speed = speed;
     }
 
-    public void Speak(string message)
+    public void Speak(string message, bool extra)
     {
         if(TryGetKokoroTTS(out var tts))
         {
             try
             {
-                var phonemes = ipa.EnglishToIPA(message);
-                var tokens = Tokenizer.TokenizePhonemes(phonemes.ToCharArray());
+                int[]? tokens;
+                if(extra) tokens = Tokenizer.Tokenize(message);
+                else      tokens = Tokenizer.TokenizePhonemes(ipa.EnglishToIPA(message).ToCharArray());
+
                 lastJob?.Cancel();
                 kp.StopPlayback();
                 kp.SetVolume(volume);

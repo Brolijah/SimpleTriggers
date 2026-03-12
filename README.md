@@ -20,7 +20,7 @@ Kokoro may also have slight performance hits but in my personal testing it was b
   * Optional arguments: `enable`/`on` or `disable`/`off` to activate or deactivate the whole trigger system.
 
 ### Images
-![](https://i.imgur.com/q1UmdHN.png) ![](https://i.imgur.com/Hc9FhW8.png)
+![](https://i.imgur.com/q1UmdHN.png) ![](https://i.imgur.com/MDOUnRy.png)
 
 
 ## Known Issues

@@ -20,8 +20,8 @@ public class STWinSpeech : ITextToSpeech
 
     public void SetSpeed(float speed)
     { }
- 
-    public void Speak(string message)
+    
+    public void Speak(string message, bool extra)
     {
         synth.SpeakAsync(message);
     }

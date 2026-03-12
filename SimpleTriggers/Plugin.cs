@@ -8,6 +8,7 @@ using System.Reflection;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using System.Threading.Tasks;
+using System;
 
 namespace SimpleTriggers;
 
@@ -34,20 +35,14 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        // TODO: Configuration validation
         if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
         ChatListener = new ChatListener(this, ChatGui);
         ChatLog = [];
 
         SwapTTSBackend(Configuration.TTSProvider);
-        // You might normally want to embed resources and load them from the manifest stream
-        //var goatImagePath = Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "goat.png");
         var version = GetInformationalVersion();
 
-        //ConfigWindow = new ConfigWindow(this);
         MainWindow = new MainWindow(this, version);
-
-        //WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
         CommandManager.AddHandler(CommandPrefixA, new CommandInfo(OnCommand)
@@ -158,6 +153,8 @@ public sealed class Plugin : IDalamudPlugin
                     break;
                 */
                 case TextToSpeechType.Kokoro:
+                    Task.Run(() => TextToSpeech?.Speak(message, Configuration.KokoroUseEspeak));
+                    break;
                 case TextToSpeechType.WindowsSystem:
                     Task.Run(() => TextToSpeech?.Speak(message));
                     break;
