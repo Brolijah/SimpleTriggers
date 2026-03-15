@@ -10,7 +10,6 @@ using SimpleTriggers.Gui;
 using SimpleTriggers.SeFunctions;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Triggers;
-using Serilog;
 
 namespace SimpleTriggers.Windows;
 

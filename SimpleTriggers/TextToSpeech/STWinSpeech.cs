@@ -1,6 +1,6 @@
 using System;
 using System.Speech.Synthesis;
-using Serilog;
+using SimpleTriggers.Logger;
 
 public class STWinSpeech : ITextToSpeech
 {
@@ -18,7 +18,7 @@ public class STWinSpeech : ITextToSpeech
             synth.SelectVoice(voice);
         } catch (Exception e)
         {
-            Log.Warning(e, $"Voice \"{voice}\" not found.");
+            STLog.Log.Warning(e, $"Voice \"{voice}\" not found.");
         }
     }
 
@@ -37,7 +37,7 @@ public class STWinSpeech : ITextToSpeech
             synth.SpeakAsync(message);
         } catch (Exception e)
         {
-            Log.Error(e, "STWinSpeech.Speak(): Exception caught:");
+            STLog.Log.Error(e, "STWinSpeech.Speak(): Exception caught:");
         }
     }
 

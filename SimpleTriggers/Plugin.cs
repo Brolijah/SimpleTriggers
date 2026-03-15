@@ -8,7 +8,7 @@ using System.Reflection;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using System.Threading.Tasks;
-using Serilog;
+using SimpleTriggers.Logger;
 
 namespace SimpleTriggers;
 
@@ -17,6 +17,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService] internal static IPluginLog Log {get; private set; } = null!;
 
     public string Name => "Simple Triggers";
     private const string CommandPrefixA = "/simpletriggers";
@@ -34,6 +35,7 @@ public sealed class Plugin : IDalamudPlugin
     
     public Plugin()
     {
+        STLog.SetLogger(Log);
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
         ChatListener = new ChatListener(this, ChatGui);
