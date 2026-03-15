@@ -17,7 +17,7 @@ Message history is never saved outside of the plugin running and is lost when th
   * Optional arguments: `enable`/`on` or `disable`/`off` to activate or deactivate the whole trigger system.
 
 ### Images
-![](https://i.imgur.com/q1UmdHN.png) ![](https://i.imgur.com/MDOUnRy.png)
+![](https://i.imgur.com/KuZnQRM.png) ![](https://i.imgur.com/MDOUnRy.png)
 
 
 ## Known Issues
