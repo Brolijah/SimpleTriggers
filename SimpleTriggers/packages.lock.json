@@ -26,9 +26,9 @@
       },
       "System.Speech": {
         "type": "Direct",
-        "requested": "[11.0.0-preview.1.26104.118, )",
-        "resolved": "11.0.0-preview.1.26104.118",
-        "contentHash": "889uQYHEKqly8GmQOZjA955GOiVQuVP4X/eRrkhBSkrpt9o/HJSMw5eAVufpaJnmWNLzIKJx/lDUzzkLWr98tg=="
+        "requested": "[10.0.5, )",
+        "resolved": "10.0.5",
+        "contentHash": "MYkGiMGWYc9rhyvsmf2UGIHD4RVJ3+uNgllFPP1YW6ILJJDXpDN8jMcy++0E/KrG507kTPCo5EOW4tEwUOCKhQ=="
       },
       "KokoroSharp": {
         "type": "Transitive",

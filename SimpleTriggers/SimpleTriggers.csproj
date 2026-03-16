@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="KokoroSharp.CPU" Version="0.6.5" />
-    <PackageReference Include="System.Speech" Version="11.0.0-preview.1.26104.118" />
+    <PackageReference Include="System.Speech" Version="10.0.5" />
   </ItemGroup>
 
     <Target Name="_ExcludeUnsupportedRuntimes" BeforeTargets="_CopyFilesMarkedCopyLocal">
