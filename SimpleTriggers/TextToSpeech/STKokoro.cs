@@ -23,8 +23,8 @@ public class STKokoro : ITextToSpeech
     private float speed = 1.0f;
     private IPA ipa;
     private KokoroVoice kv;
-    //private KokoroPlayback kp;
-    private AudioPlayer kp;
+    private KokoroPlayback kp;
+    //private AudioPlayer kp;
     private KokoroJob? lastJob;
     public STKokoro(string binPath, string configPath)
     {
@@ -35,9 +35,7 @@ public class STKokoro : ITextToSpeech
         Tokenizer.eSpeakNGPath = Path.Join(binPath, "espeak");
         KokoroVoiceManager.LoadVoicesFromPath(Path.Join(binPath,"voices"));
         kv = KokoroVoiceManager.GetVoice("af_bella");
-        //kp = new KokoroPlayback();
-        kp = new AudioPlayer();
-        kp.Enqueue([]);
+        kp = new KokoroPlayback();
     }
 
     private async Task<KokoroTTS?> LoadModelAsync()

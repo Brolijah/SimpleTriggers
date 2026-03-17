@@ -49,7 +49,7 @@ public static class STKokoroUI
         }
         
         ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
-        ImGui.SliderFloat("Voice Volume", ref plugin.Configuration.TTSVolume,1.0f, 150.0f,"%.0f%%");
+        ImGui.SliderFloat("Voice Volume", ref plugin.Configuration.TTSVolume,1.0f, 100.0f,"%.0f%%");
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
             plugin.SetTTSVolume(plugin.Configuration.TTSVolume);
