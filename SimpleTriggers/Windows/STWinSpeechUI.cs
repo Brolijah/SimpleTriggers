@@ -5,6 +5,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface;
 using System.Speech.Synthesis;
 using System.Speech.AudioFormat;
+using Dalamud.Interface.Utility;
 
 namespace SimpleTriggers.Windows;
 
@@ -25,7 +26,7 @@ public static class STWinSpeechUI
             return; // We don't want the below to run if this isn't windows.
         }
 
-        ImGui.SetNextItemWidth(160);
+        ImGui.SetNextItemWidth(160 * ImGuiHelpers.GlobalScale);
         using (var box = ImRaii.Combo("##WinSpeechVoiceBox", plugin.Configuration.WinSpeechVoice, ImGuiComboFlags.HeightLarge))
         {
             var synth = new SpeechSynthesizer();
@@ -55,7 +56,7 @@ public static class STWinSpeechUI
         ImGui.Text("Test Voice");
 
         // Volume and Speed
-        ImGui.SetNextItemWidth(192);
+        ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
         ImGui.SliderFloat("Voice Speed", ref plugin.Configuration.TTSSpeed,0.5f, 1.5f,"%.1fx");
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
@@ -63,7 +64,7 @@ public static class STWinSpeechUI
             plugin.Configuration.Save();
         }
 
-        ImGui.SetNextItemWidth(192);
+        ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
         ImGui.SliderFloat("Voice Volume", ref plugin.Configuration.TTSVolume,1.0f, 100.0f,"%.0f%%");
         if(ImGui.IsItemDeactivatedAfterEdit())
         {

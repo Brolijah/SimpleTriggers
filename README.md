@@ -6,7 +6,7 @@ Responses can be done in one of the below methods or any combination of the thre
 * Chat Message
 * In-Game SFX
 * Text-to-Speech 
-  * Kokoro (recommended)
+  * Kokoro
   * Windows System
 
 New Triggers can be created by either clicking the "Add New" button on the Triggers tab or saving a chat log message on the Chat History tab.

@@ -20,11 +20,11 @@ public class STKokoro : ITextToSpeech
     private readonly string configPath;
     private readonly Task<KokoroTTS?> ttsTask;
     private readonly CancellationTokenSource cts = new();
-    private float volume = 1.0f;
     private float speed = 1.0f;
     private IPA ipa;
     private KokoroVoice kv;
-    private KokoroPlayback kp;
+    //private KokoroPlayback kp;
+    private AudioPlayer kp;
     private KokoroJob? lastJob;
     public STKokoro(string binPath, string configPath)
     {
@@ -35,7 +35,8 @@ public class STKokoro : ITextToSpeech
         Tokenizer.eSpeakNGPath = Path.Join(binPath, "espeak");
         KokoroVoiceManager.LoadVoicesFromPath(Path.Join(binPath,"voices"));
         kv = KokoroVoiceManager.GetVoice("af_bella");
-        kp = new KokoroPlayback();
+        //kp = new KokoroPlayback();
+        kp = new AudioPlayer();
         kp.Enqueue([]);
     }
 
@@ -98,18 +99,15 @@ public class STKokoro : ITextToSpeech
         kv = KokoroVoiceManager.GetVoice(strVoice);
     }
 
+    // [0.0, 100.0], though technically would allow values over 100
     public void SetVolume(float volume)
     {
-        this.volume = volume/100.0f;
-        if(!OSHelper.IsWindows()) // causes undesirable effects in Windows
+        try
         {
-            try
-            {
-                kp.SetVolume(this.volume);
-            } catch (Exception e)
-            {
-                STLog.Log.Warning(e,"Exception caught:");
-            }
+            kp.SetVolume(volume/100f);
+        } catch (Exception e)
+        {
+            STLog.Log.Warning(e,"Exception caught:");
         }
     }
 
@@ -125,7 +123,7 @@ public class STKokoro : ITextToSpeech
             try
             {
                 int[]? tokens;
-                if(extra) tokens = Tokenizer.Tokenize(message);
+                if(extra) tokens = Tokenizer.Tokenize(message, "en-us");
                 else      tokens = Tokenizer.TokenizePhonemes(ipa.EnglishToIPA(message).ToCharArray());
 
                 lastJob?.Cancel();
