@@ -2,6 +2,7 @@ using System;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.System.String;
 using SimpleTriggers.SeFunctions;
 
 namespace SimpleTriggers;
@@ -18,6 +19,15 @@ internal class ChatListener : IDisposable
         chatGui.ChatMessage += OnChatMessage;
     }
 
+    private unsafe string SanitizeString(string text)
+    {
+        var utfStr = new Utf8String(text);
+        utfStr.SanitizeString(
+            AllowedEntities.UppercaseLetters | AllowedEntities.LowercaseLetters |
+            AllowedEntities.Numbers | AllowedEntities.SpecialCharacters | AllowedEntities.CJK);
+        return utfStr.ToString().Trim();
+    }
+
     public void Dispose()
     {
         chatGui.ChatMessage -= OnChatMessage;
@@ -26,7 +36,7 @@ internal class ChatListener : IDisposable
     private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
     {
         // Ignore messages sent from the plugin
-        var msgStr = message.ToString();
+        var msgStr = SanitizeString(message.ToString());
         if(msgStr.StartsWith($"[{plugin.Name}]")) { return; }
         
         if(plugin.Configuration.EnableTriggers)
