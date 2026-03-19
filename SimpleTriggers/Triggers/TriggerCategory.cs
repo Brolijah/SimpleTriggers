@@ -16,6 +16,16 @@ public class TriggerCategory
         Triggers = [];
     }
 
+    public TriggerCategory(string name, List<TriggerEntry> t)
+    {
+        Name = name;
+        Triggers = [];
+        foreach(var te in t)
+        {
+            Triggers.Add(new TriggerEntry(te));
+        }
+    }
+
     public TriggerCategory(TriggerCategory tc)
     {
         Name = tc.Name;

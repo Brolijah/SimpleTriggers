@@ -6,6 +6,7 @@ using Dalamud.Interface;
 using System.Speech.Synthesis;
 using System.Speech.AudioFormat;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Components;
 
 namespace SimpleTriggers.Windows;
 
@@ -46,12 +47,10 @@ public static class STWinSpeechUI
         }
 
         ImGui.SameLine();
-        ImGui.PushFont(UiBuilder.IconFont);
-        if(ImGui.Button($"{FontAwesomeIcon.Play.ToIconString()}"))
+        if(ImGuiComponents.IconButton(FontAwesomeIcon.Play))
         {
             plugin.SpeakTTS("This is a test of the Windows System voice.");
         }
-        ImGui.PopFont();
         ImGui.SameLine();
         ImGui.Text("Test Voice");
 

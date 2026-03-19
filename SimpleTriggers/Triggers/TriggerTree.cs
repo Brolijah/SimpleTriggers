@@ -59,7 +59,7 @@ public class TriggerTree
 
     public int GetIndexOfCategory(string name)
     {
-        return categories.IndexOf(categories.First(tc => tc.Name == name));
+        return GetIndexOfCategory(categories.FirstOrDefault(tc => tc.Name == name) ?? new TriggerCategory());
     }
 
     public int GetIndexOfCategory(TriggerCategory tc)

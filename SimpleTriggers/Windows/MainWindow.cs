@@ -4,6 +4,7 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface;
 using SimpleTriggers.Gui;
@@ -18,10 +19,18 @@ internal struct SelectionState
     public int chatIndex = -1; // used to track the selected index in Chat History
     public int trigSubIndex = -1; // used to track selected index in TriggerCategory
     public int trigListIndex = -1; // used to track selected node in the trigger box list
-    public TriggerEntry? activeTrigger = null;
-    public TriggerCategory? activeCategory = null;
+    public TriggerEntry? activeTrigger = null; // Currently selected trigger
+    public TriggerCategory? activeCategory = null; // Currently selected category -- should never be null if activeTrigger is not null
 
     public SelectionState() {}
+    public void Reset()
+    {
+        chatIndex = -1;
+        trigSubIndex = -1;
+        trigListIndex = -1;
+        activeTrigger = null;
+        activeCategory = null;
+    }
 }
 
 public class MainWindow : Window, IDisposable
@@ -56,10 +65,7 @@ public class MainWindow : Window, IDisposable
                     if(tab) {
                         DrawTriggersTab();
                     } else { // if we're not on this tab, deselect any trigger entry
-                        state.trigListIndex = -1;
-                        state.trigSubIndex = -1;
-                        state.activeTrigger = null;
-                        state.activeCategory = null;
+                        state.Reset();
                     }
                 }
 
@@ -159,12 +165,10 @@ public class MainWindow : Window, IDisposable
         if(editing.doResponseTTS)
         {
             ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            if(ImGui.Button($"{FontAwesomeIcon.Play.ToIconString()}##TestPlayTTS"))
+            if(ImGuiComponents.IconButton(FontAwesomeIcon.Play))
             {
                 plugin.SpeakTTS(editing.response);
             }
-            ImGui.PopFont();
         }
         // Checkbox for Playing Sound FX
         if(ImGui.Checkbox("Play Sound?", ref editing.doPlaySound))
@@ -176,12 +180,10 @@ public class MainWindow : Window, IDisposable
         if(editing.doPlaySound)
         {
             ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            if(ImGui.Button($"{FontAwesomeIcon.Play.ToIconString()}##TestPlaySFX"))
+            if(ImGuiComponents.IconButton(FontAwesomeIcon.Play))
             {
                 PlaySound.Play(SoundsExtensions.FromIdx(editing.soundFx));
             }
-            ImGui.PopFont();
 
             ImGui.SameLine();
             ImGui.SetNextItemWidth(135 * ImGuiHelpers.GlobalScale);
@@ -199,30 +201,101 @@ public class MainWindow : Window, IDisposable
             }
         }
 
-        if(ImGui.Button("Add New"))
+        // Import Button
+        if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.FileImport, "Import"))
+        {
+            ImGui.OpenPopup("Import");
+        }
+        using (var popup = ImRaii.ContextPopup("Import"))
+        {
+            if (popup)
+            {
+                bool doImport = false;
+                ImGui.SetNextItemWidth(200 * ImGuiHelpers.GlobalScale);
+                if(ImGui.InputText("##ImportTriggerField", ref TriggerPreset.buffer, 8192, ImGuiInputTextFlags.EnterReturnsTrue)) doImport = true;
+                ImGui.SameLine(); if (ImGui.Button("OK")) doImport = true;
+                if(doImport)
+                {
+                    var name = TriggerPreset.Import(TriggerPreset.buffer, plugin);
+                    if(name is not null) RefreshSelectionState(name, true, true);
+                    plugin.Configuration.Save();
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+        }
+
+        // Export Button
+        ImGui.SameLine();
+        if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.FileExport, "Export"))
+        {
+            string export;
+            if(state.activeCategory is not null)
+            {
+                // export just the selected trigger
+                if(state.activeTrigger is not null)
+                {
+                    export = TriggerPreset.Export(new TriggerCategory(state.activeCategory.Name, [state.activeTrigger]));
+                } else // export whole cateogry
+                {
+                    export = TriggerPreset.Export(state.activeCategory);
+                }
+                ImGui.SetClipboardText(export);
+            }
+        }
+
+        // Add/Copy Trigger
+        (var addIcon, var addText) = (state.trigSubIndex != -1) ? (FontAwesomeIcon.Copy, "Copy") : (FontAwesomeIcon.Plus, " Add");
+        if(ImGuiComponents.IconButtonWithText(addIcon, addText, new Vector2(60 * ImGuiHelpers.GlobalScale, 0)))
         {
             AddTrigger(trigRef, state.activeCategory?.Name ?? plugin.DefaultCategoryName);
             RefreshSelectionState(state.activeCategory?.Name ?? plugin.DefaultCategoryName, true);
         }
 
+        // Remove Trigger/Category
         ImGui.SameLine();
-        if(ImGui.Button("Remove") && state.trigSubIndex != -1)
+        if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.TrashAlt, "Remove"))// && state.trigSubIndex != -1)
         {
-            var catname = state.activeCategory!.Name;
-            RemoveTrigger(state.trigSubIndex, catname);
-            state.trigListIndex = -1;
-            state.trigSubIndex = -1;
-            state.activeTrigger = null;
-            state.activeCategory = null;
+            if(state.activeCategory is not null)
+            {
+                // Remove a single trigger
+                if(state.activeTrigger is not null)
+                {
+                    var catname = state.activeCategory!.Name;
+                    RemoveTrigger(state.trigSubIndex, catname);
+                    state.Reset();
+                } else {
+                    // Remove whole category
+                    // Use popup modal to confirm removing the whole category
+                    ImGui.OpenPopup("Remove Category?");
+                }
+            }
+        }
+        using(var popup = ImRaii.PopupModal("Remove Category?", ImGuiWindowFlags.NoResize))
+        {
+            if(popup)
+            {
+                ImGui.Text("Are you sure you want to remove this category \nand all the triggers contained within?\nThis action cannot be undone.");
+                if(ImGui.Button("OK"))
+                {
+                    plugin.Configuration.TriggerTree.Remove(state.activeCategory!.Name);
+                    plugin.Configuration.Save();
+                    state.Reset();
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SameLine();
+                if(ImGui.Button("Cancel"))
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+            }
         }
 
         // Shift trigger up and down buttons
-        if(state.trigListIndex != -1)// && state.trigSubIndex != -1)
+        if(state.trigListIndex != -1)
         {
             // Shift Up button
             ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            if(ImGui.Button(FontAwesomeIcon.ArrowUp.ToIconString()))
+            if(ImGuiComponents.IconButton(FontAwesomeIcon.ArrowUp))
             {
                 // Reordering Triggers inside a Category
                 if(state.activeTrigger is not null)
@@ -247,7 +320,7 @@ public class MainWindow : Window, IDisposable
             }
             // Shift Down button
             ImGui.SameLine();
-            if(ImGui.Button(FontAwesomeIcon.ArrowDown.ToIconString()))
+            if(ImGuiComponents.IconButton(FontAwesomeIcon.ArrowDown))
             {
                 // Reordering Triggers inside a Category
                 if(state.activeTrigger is not null)
@@ -267,12 +340,9 @@ public class MainWindow : Window, IDisposable
                         state.activeCategory = plugin.Configuration.TriggerTree.ElementAt(index);
                         RefreshSelectionState(state.activeCategory.Name, state.activeCategory.opened, true);
                     }
-                    
                 }
                 updateConfig = true;
-                
             }
-            ImGui.PopFont();
         }
 
         ImGui.SameLine(ImGui.GetWindowWidth()-(125*ImGuiHelpers.GlobalScale));
@@ -283,12 +353,12 @@ public class MainWindow : Window, IDisposable
         }
         ImGuiCustom.HoverTooltip("Hold SHIFT to Clear All");
 
+        // The below is the visual for the trigger tree structure
         ImGui.Separator();
         using (var child = ImRaii.Child("TriggerBoxWithScrollbar", Vector2.Zero, true))
         {
             if(child)
             {
-                var removeIndex = -1;
                 var idx = 0;
                 foreach(var category in plugin.Configuration.TriggerTree)
                 {
@@ -305,12 +375,13 @@ public class MainWindow : Window, IDisposable
                     treeFlags |= state.trigListIndex==idx ? ImGuiTreeNodeFlags.Selected : 0;
                     using(var tree = ImRaii.TreeNode($"{category.Name}##TreeNode{category.Name}{pushedCatId}", treeFlags))
                     {
+                        // if the category itself was selected
                         if(ImGui.IsItemClicked())
                         {
                             state.trigSubIndex = -1;
                             state.trigListIndex = idx;
-                            state.activeCategory = category;
                             state.activeTrigger = null;
+                            state.activeCategory = category;
                         }
 
                         if(tree)
@@ -344,9 +415,9 @@ public class MainWindow : Window, IDisposable
                                         state.activeCategory = category;
                                         if(ImGui.MenuItem("Remove Trigger"))
                                         {
-                                            removeIndex = subIdx;
-                                            state.trigListIndex = -1;
-                                            state.trigSubIndex = -1;
+                                            RemoveTrigger(subIdx, category.Name);
+                                            state.Reset();
+                                            break; // exit the loop because the list is now invalidated
                                         }
                                     }
                                 }
@@ -364,16 +435,6 @@ public class MainWindow : Window, IDisposable
                     ImGui.Text("Looks like you have no triggers yet. To get started, click \"Add New.\"\n"+
                                "Or, you can Save a chat message from the \"Chat History\" tab.");
                 }
-
-                if(removeIndex != -1)
-                {
-                    var catname = state.activeCategory!.Name;
-                    RemoveTrigger(removeIndex, catname);
-                    state.trigListIndex = -1;
-                    state.trigSubIndex = -1;
-                    state.activeTrigger = null;
-                    state.activeCategory = null;
-                }
             }
         }
 
@@ -382,13 +443,10 @@ public class MainWindow : Window, IDisposable
             plugin.Configuration.Save();
         }
 
-        // checks if we click anywhere else and deselects any entries
+        // checks if we click anywhere else and resets the selection state
         if(ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
-            state.trigListIndex = -1;
-            state.trigSubIndex = -1;
-            state.activeTrigger = null;
-            state.activeCategory = null;
+            state.Reset();
         }
     } // DrawTriggersTab
 
@@ -399,9 +457,7 @@ public class MainWindow : Window, IDisposable
         ImGui.SameLine();
         chatFilter.Draw("##ChatFilter", 180);
         ImGui.SameLine();
-        ImGui.PushFont(UiBuilder.IconFont);
-        if(ImGui.Button(FontAwesomeIcon.Times.ToIconString())) { chatFilter.Clear(); }
-        ImGui.PopFont();
+        if(ImGuiComponents.IconButton(FontAwesomeIcon.Times)) { chatFilter.Clear(); }
         ImGui.SameLine();
         if(ImGui.Button("Clear Log")) { ClearLog(); state.chatIndex = -1; }
         ImGui.Separator();
@@ -442,7 +498,7 @@ public class MainWindow : Window, IDisposable
         }
 
         // This deselects any chat items if we click in the open space of the chat box
-        if(ImGui.IsItemHovered() && ImGui.IsMouseClicked(0))
+        if(ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
             state.chatIndex = -1;
         }
@@ -533,8 +589,7 @@ public class MainWindow : Window, IDisposable
             category.Triggers.Add(trig);
         } else
         {
-            plugin.Configuration.TriggerTree.Add(new TriggerCategory(categoryName));
-            plugin.Configuration.TriggerTree[categoryName]!.Triggers.Add(trig);
+            plugin.Configuration.TriggerTree.Add(new TriggerCategory(categoryName, [trig]));
         }
         plugin.Configuration.Save();
     }
