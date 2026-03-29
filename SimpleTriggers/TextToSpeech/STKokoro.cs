@@ -19,23 +19,34 @@ public class STKokoro : ITextToSpeech
     private const string ModelUri = "https://github.com/taylorchu/kokoro-onnx/releases/download/v0.2.0/kokoro-quant.onnx";
     private readonly string configPath;
     private readonly Task<KokoroTTS?> ttsTask;
+    private readonly Task<IPA?> ipaTask;
     private readonly CancellationTokenSource cts = new();
     private float speed = 1.0f;
     private string lang = "en-us";
-    private IPA ipa;
     private KokoroVoice kv;
     private KokoroPlayback kp;
     private KokoroJob? lastJob;
     public STKokoro(string binPath, string configPath)
     {
         this.configPath = configPath;
-        ipa = new IPA(Path.Join(binPath, "en_US.txt"));
-
         ttsTask = LoadModelAsync();
+        ipaTask = LoadDictionaryAsync(binPath);     
         Tokenizer.eSpeakNGPath = Path.Join(binPath, "espeak");
         KokoroVoiceManager.LoadVoicesFromPath(Path.Join(binPath,"voices"));
         kv = KokoroVoiceManager.GetVoice("af_bella");
         kp = new KokoroPlayback();
+    }
+
+    private async Task<IPA?> LoadDictionaryAsync(string path)
+    {
+        try
+        {
+            return new IPA(Path.Join(path, "en_US.txt"));
+        } catch (Exception e)
+        {
+            STLog.Log.Error(e, "STKokoro.LoadDictionaryAsync(): Exception caught:");
+            return null;
+        }
     }
 
     private async Task<KokoroTTS?> LoadModelAsync()
@@ -87,6 +98,16 @@ public class STKokoro : ITextToSpeech
         return tts != null;
     }
 
+    private bool TryGetIPA([NotNullWhen(true)] out IPA? ipa)
+    {
+        if(ipaTask.IsCompletedSuccessfully)
+        {
+            ipa = ipaTask.Result;
+        } else { ipa = null; }
+
+        return ipa != null;
+    }
+
     private string GetModelPath()
     {
         return Path.Join(configPath, "kokoro-quant.onnx");
@@ -122,7 +143,7 @@ public class STKokoro : ITextToSpeech
 
     public void Speak(string message, bool extra)
     {
-        if(TryGetKokoroTTS(out var tts))
+        if(TryGetKokoroTTS(out var tts) && TryGetIPA(out var ipa))
         {
             try
             {
@@ -144,14 +165,17 @@ public class STKokoro : ITextToSpeech
 
     public bool IsInitialized()
     {
-        return TryGetKokoroTTS(out _);
+        return TryGetKokoroTTS(out _) && TryGetIPA(out _);
     }
 
     public void Dispose()
     {
         cts.Cancel();
-        ipa.Dispose();
         kp.Dispose();
+        if(TryGetIPA(out var ipa))
+        {
+            ipa.Dispose();
+        }
         if(TryGetKokoroTTS(out var tts))
         {
             tts.Dispose();
