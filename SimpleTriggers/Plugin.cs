@@ -40,7 +40,7 @@ public sealed class Plugin : IDalamudPlugin
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
         ChatListener = new ChatListener(this, ChatGui);
-        ChatLog = new Queue<string>((int)Configuration.MaxLogHistory);
+        ChatLog = new Queue<string>((int)MaxLogHistoryCeiling);
 
         SwapTTSBackend(Configuration.TTSProvider);
         var version = GetInformationalVersion();
