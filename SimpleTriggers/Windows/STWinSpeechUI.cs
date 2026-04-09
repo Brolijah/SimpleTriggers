@@ -56,7 +56,7 @@ public static class STWinSpeechUI
 
         // Volume and Speed
         ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
-        ImGui.SliderInt("Voice Speed", ref plugin.Configuration.WinSpeech.Speed,-5, 5, "%+d");
+        ImGui.SliderInt("Voice Speed", ref plugin.Configuration.WinSpeech.Speed,-5, 5, "%+d", ImGuiSliderFlags.NoInput);
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
             plugin.SetTTSSpeed(plugin.Configuration.WinSpeech.Speed);
@@ -64,12 +64,23 @@ public static class STWinSpeechUI
         }
 
         ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
-        ImGui.SliderInt("Voice Volume", ref plugin.Configuration.WinSpeech.Volume,1, 100,"%d%%");
+        if(plugin.Configuration.AllowAudioBoost) // Danger Zone, Use Wisely
+        {
+            ImGui.DragScalar("Voice Volume", ref plugin.Configuration.WinSpeech.Volume,1f,1,3000,"%d%%",ImGuiSliderFlags.AlwaysClamp);
+        } else { // Normal Range
+            ImGui.SliderInt("Voice Volume", ref plugin.Configuration.WinSpeech.Volume,1, 200,"%d%%", ImGuiSliderFlags.NoInput);
+        }
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
+            plugin.Configuration.WinSpeech.Volume = Math.Clamp(plugin.Configuration.WinSpeech.Volume, 1, plugin.Configuration.AllowAudioBoost ? 3000 : 200);
+            plugin.SetTTSVolume(plugin.Configuration.WinSpeech.Volume);
+            plugin.Configuration.Save();
+        }
+        if(ImGui.Checkbox("Allow boosting over 200%", ref plugin.Configuration.AllowAudioBoost))
+        {
+            plugin.Configuration.WinSpeech.Volume = Math.Clamp(plugin.Configuration.WinSpeech.Volume, 1, 200);
             plugin.SetTTSVolume(plugin.Configuration.WinSpeech.Volume);
             plugin.Configuration.Save();
         }
     }
-
 }

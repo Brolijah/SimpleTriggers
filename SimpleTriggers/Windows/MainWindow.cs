@@ -12,6 +12,7 @@ using SimpleTriggers.SeFunctions;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Triggers;
 using SimpleTriggers.Logger;
+using NAudio.CoreAudioApi;
 
 namespace SimpleTriggers.Windows;
 
@@ -410,7 +411,7 @@ public class MainWindow : Window, IDisposable
                                     state.activeCategory = category;
                                 }
 
-                                using(var pop = ImRaii.ContextPopupItem($"##RemoveTriggerPopup"))
+                                using(var pop = ImRaii.ContextPopupItem("##RemoveTriggerPopup"))
                                 {
                                     if(pop)
                                     {
@@ -435,9 +436,9 @@ public class MainWindow : Window, IDisposable
                 // Background text in the window to instruct users on creating their first triggers
                 if(idx==0)
                 {
-                    using var color = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1.0f, 1.0f, 1.0f, 0.8f));
-                    ImGui.Text("Looks like you have no triggers yet. To get started, click the \"Add\" button.\n"+
-                               "Or, you can Save a chat message from the \"Chat History\" tab.");
+                    ImGui.TextColoredWrapped(new Vector4(1.0f, 1.0f, 1.0f, 0.8f),
+                        "Looks like you have no triggers yet. To get started, click the \"Add\" button.\n"+
+                        "Or, you can Save a chat message from the \"Chat History\" tab.");
                 }
             }
         }
@@ -527,10 +528,9 @@ public class MainWindow : Window, IDisposable
             ImGui.SetNextItemWidth(120 * ImGuiHelpers.GlobalScale);
             ImGui.DragScalar<uint>("Max Log History##MaxHistoryLength",
                 ref plugin.Configuration.MaxLogHistory,0.2f,0, plugin.MaxLogHistoryCeiling,default,ImGuiSliderFlags.AlwaysClamp);
-            if(plugin.Configuration.MaxLogHistory > plugin.MaxLogHistoryCeiling)
-                plugin.Configuration.MaxLogHistory = Math.Clamp(plugin.Configuration.MaxLogHistory, 1, plugin.MaxLogHistoryCeiling);
             if(ImGui.IsItemDeactivatedAfterEdit())
             {
+                plugin.Configuration.MaxLogHistory = Math.Clamp(plugin.Configuration.MaxLogHistory, 1, plugin.MaxLogHistoryCeiling);
                 plugin.Configuration.Save();
             }
 
@@ -551,7 +551,7 @@ public class MainWindow : Window, IDisposable
                         {
                             plugin.Configuration.TTSProvider = (TextToSpeechType)i;
                             plugin.Configuration.Save();
-                            plugin.SwapTTSBackend((TextToSpeechType)i);
+                            plugin.SwapTTSBackend();
                         }
                     }
                 }
@@ -569,6 +569,28 @@ public class MainWindow : Window, IDisposable
                 STWinSpeechUI.DrawWinSpeechSettings(plugin);
             }
             ImGui.Unindent();
+
+            // Output Device
+            {
+                ImGui.NewLine();
+                var enumerator = new MMDeviceEnumerator();
+                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+                ImGui.SetNextItemWidth(300 * ImGuiHelpers.GlobalScale);
+                using (var box = ImRaii.Combo("Output Device", devices.FirstOrDefault(d => d.ID == plugin.Configuration.AudioOutputDevice)?.FriendlyName ?? devices.First().FriendlyName))
+                {
+                    if (box)
+                    {
+                        for(var i = 0; i < devices.Count-1; ++i)
+                        {
+                            if(ImGui.Selectable($"{devices[i].FriendlyName}"))
+                            {
+                                plugin.Configuration.AudioOutputDevice = devices[i].ID;
+                                plugin.SetTTSOutputDevice(i);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

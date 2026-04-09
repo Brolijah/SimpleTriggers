@@ -30,6 +30,8 @@ public class Configuration : IPluginConfiguration
     public int Version { get; set; } = 0;
     public bool EnableTriggers = true;
     public uint MaxLogHistory = 500;
+    public string AudioOutputDevice = "";
+    public bool AllowAudioBoost = false; // Lets the user boost the volume above a normally safe amount
     public TextToSpeechType TTSProvider = TextToSpeechType.None;
     public KokoroConfig Kokoro { get; set; } = new();
     public WinSpeechConfig WinSpeech { get; set; } = new();

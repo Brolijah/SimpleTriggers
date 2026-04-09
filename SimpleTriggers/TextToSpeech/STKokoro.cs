@@ -18,30 +18,29 @@ public class STKokoro : ITextToSpeech
     // sha256 = c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204
     private const string ModelUri = "https://github.com/taylorchu/kokoro-onnx/releases/download/v0.2.0/kokoro-quant.onnx";
     private readonly string configPath;
-    private readonly Task<KokoroTTS?> ttsTask;
+    private readonly Task<KokoroModel?> modelTask;
     private readonly Task<IPA?> ipaTask;
     private readonly CancellationTokenSource cts = new();
     private float speed = 1.0f;
     private string lang = "en-us";
     private KokoroVoice kv;
-    private KokoroPlayback kp;
-    private KokoroJob? lastJob;
+    public AudioPlayer AudioPlayer { get; }
     public STKokoro(string binPath, string configPath)
     {
         this.configPath = configPath;
-        ttsTask = LoadModelAsync();
-        ipaTask = LoadDictionaryAsync(binPath);     
+        modelTask = LoadModelAsync();
+        ipaTask = LoadDictionaryAsync(Path.Join(binPath, "en_US.txt"));     
         Tokenizer.eSpeakNGPath = Path.Join(binPath, "espeak");
         KokoroVoiceManager.LoadVoicesFromPath(Path.Join(binPath,"voices"));
         kv = KokoroVoiceManager.GetVoice("af_bella");
-        kp = new KokoroPlayback();
+        AudioPlayer = new AudioPlayer();
     }
 
     private async Task<IPA?> LoadDictionaryAsync(string path)
     {
         try
         {
-            return new IPA(Path.Join(path, "en_US.txt"));
+            return new IPA(path);
         } catch (Exception e)
         {
             STLog.Log.Error(e, "STKokoro.LoadDictionaryAsync(): Exception caught:");
@@ -49,7 +48,7 @@ public class STKokoro : ITextToSpeech
         }
     }
 
-    private async Task<KokoroTTS?> LoadModelAsync()
+    private async Task<KokoroModel?> LoadModelAsync()
     {
         bool download = false;
         var path = GetModelPath();
@@ -85,17 +84,17 @@ public class STKokoro : ITextToSpeech
             return null;
         }
 
-        return KokoroTTS.LoadModel(path);
+        return new KokoroModel(path);
     }
 
-    private bool TryGetKokoroTTS([NotNullWhen(true)] out KokoroTTS? tts)
+    private bool TryGetKokoroModel([NotNullWhen(true)] out KokoroModel? model)
     {
-        if(ttsTask.IsCompletedSuccessfully)
+        if(modelTask.IsCompletedSuccessfully)
         {
-            tts = ttsTask.Result;
-        } else { tts = null; }
+            model = modelTask.Result;
+        } else { model = null; }
 
-        return tts != null;
+        return model != null;
     }
 
     private bool TryGetIPA([NotNullWhen(true)] out IPA? ipa)
@@ -118,17 +117,9 @@ public class STKokoro : ITextToSpeech
         kv = KokoroVoiceManager.GetVoice(strVoice);
     }
 
-    // [0.0, 100.0]
     public void SetVolume(float volume)
     {
-        var v = volume/100f; // scales it down between [0, 1]
-        try
-        {
-            kp.SetVolume(v);
-        } catch (Exception e)
-        {
-            STLog.Log.Warning(e,"Exception caught:");
-        }
+        AudioPlayer.SetVolume(volume);
     }
 
     public void SetSpeed(float speed)
@@ -143,17 +134,26 @@ public class STKokoro : ITextToSpeech
 
     public void Speak(string message, bool extra)
     {
-        if(TryGetKokoroTTS(out var tts) && TryGetIPA(out var ipa))
+        if(TryGetKokoroModel(out var model) && TryGetIPA(out var ipa))
         {
+            AudioPlayer.StopPlayback(true);
             try
             {
                 int[]? tokens;
                 if(extra) tokens = Tokenizer.Tokenize(message, lang);
                 else      tokens = Tokenizer.TokenizePhonemes(ipa.EnglishToIPA(message).ToCharArray());
 
-                lastJob?.Cancel();
-                kp.StopPlayback();
-                lastJob = tts.EnqueueJob(KokoroJob.Create(tokens, kv, speed, kp.Enqueue));
+                var tokensList = SegmentationSystem.SplitToSegments(tokens, new()
+                {
+                    MinFirstSegmentLength = 20,
+                    MaxFirstSegmentLength = 200,
+                    MaxSecondSegmentLength = 200
+                });
+                foreach (var tc in tokensList)
+                {
+                    var bytes = KokoroPlayback.GetBytes(model.Infer(tc, kv.Features, speed));
+                    AudioPlayer.Enqueue(bytes);
+                }
             } catch (Exception e)
             {
                 STLog.Log.Error(e, "STKokoro.Speak(): Exception caught: ");
@@ -165,20 +165,20 @@ public class STKokoro : ITextToSpeech
 
     public bool IsInitialized()
     {
-        return TryGetKokoroTTS(out _) && TryGetIPA(out _);
+        return TryGetKokoroModel(out _) && TryGetIPA(out _);
     }
 
     public void Dispose()
     {
         cts.Cancel();
-        kp.Dispose();
+        AudioPlayer.Dispose();
         if(TryGetIPA(out var ipa))
         {
             ipa.Dispose();
         }
-        if(TryGetKokoroTTS(out var tts))
+        if(TryGetKokoroModel(out var model))
         {
-            tts.Dispose();
+            model.Dispose();
         }
     }
 }

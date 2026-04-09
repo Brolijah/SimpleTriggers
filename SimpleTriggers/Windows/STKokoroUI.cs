@@ -41,7 +41,7 @@ public static class STKokoroUI
 
         // Volume and Speed
         ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
-        ImGui.SliderFloat("Voice Speed", ref plugin.Configuration.Kokoro.Speed,0.5f, 1.5f,"%.1fx");
+        ImGui.SliderFloat("Voice Speed", ref plugin.Configuration.Kokoro.Speed,0.5f, 1.5f,"%.1fx", ImGuiSliderFlags.NoInput);
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
             plugin.SetTTSSpeed(plugin.Configuration.Kokoro.Speed);
@@ -49,9 +49,21 @@ public static class STKokoroUI
         }
         
         ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
-        ImGui.SliderFloat("Voice Volume", ref plugin.Configuration.Kokoro.Volume,1.0f, 100.0f,"%.0f%%");
+        if(plugin.Configuration.AllowAudioBoost) // Danger Zone, Use Wisely
+        {
+            ImGui.DragScalar<float>("Voice Volume", ref plugin.Configuration.Kokoro.Volume,1f,1f,3000f,"%.0f%%",ImGuiSliderFlags.AlwaysClamp);
+        } else { // Normal Range
+            ImGui.SliderFloat("Voice Volume", ref plugin.Configuration.Kokoro.Volume,1.0f, 200.0f,"%.0f%%", ImGuiSliderFlags.NoInput);
+        }
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
+            plugin.Configuration.Kokoro.Volume = Math.Clamp(plugin.Configuration.Kokoro.Volume, 1, plugin.Configuration.AllowAudioBoost ? 3000 : 200);
+            plugin.SetTTSVolume(plugin.Configuration.Kokoro.Volume);
+            plugin.Configuration.Save();
+        }
+        if(ImGui.Checkbox("Allow boosting over 200%", ref plugin.Configuration.AllowAudioBoost))
+        {
+            plugin.Configuration.Kokoro.Volume = Math.Clamp(plugin.Configuration.Kokoro.Volume, 1, 200);
             plugin.SetTTSVolume(plugin.Configuration.Kokoro.Volume);
             plugin.Configuration.Save();
         }
@@ -62,7 +74,7 @@ public static class STKokoroUI
         }
         ImGui.SameLine();
         ImGui.PushFont(UiBuilder.IconFont);
-        ImGui.Text($"{FontAwesomeIcon.ExclamationCircle.ToIconString()}");
+        ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
         ImGui.PopFont();
         ImGuiCustom.HoverTooltip("May result in more natural voices, \nhowever if it causes issues, leave disabled.");
 

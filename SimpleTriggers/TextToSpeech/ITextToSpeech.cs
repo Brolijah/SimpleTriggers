@@ -1,5 +1,6 @@
 
 using System;
+using SimpleTriggers.TextToSpeech;
 
 public interface ITextToSpeech : IDisposable
 {
@@ -9,4 +10,5 @@ public interface ITextToSpeech : IDisposable
     void SetSpeed(float speed);
     void SetLanguage(string lang);
     bool IsInitialized();
+    AudioPlayer AudioPlayer { get; }
 }

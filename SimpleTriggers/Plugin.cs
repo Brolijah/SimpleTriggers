@@ -27,11 +27,11 @@ public sealed class Plugin : IDalamudPlugin
     internal uint MaxLogHistoryCeiling = 10000; // Hard coded limit. Who says? Me says.
     internal bool doLogChatHistory = false; // transient value, must be enabled by the user
     public Configuration Configuration { get; init; }
-
+    
     public readonly WindowSystem WindowSystem = new("Simple Triggers");
     private MainWindow MainWindow { get; init; }
     private ChatListener ChatListener { get; init; }
-    private ITextToSpeech? TextToSpeech {get; set;}
+    private ITextToSpeech? TextToSpeech { get; set; }
     internal Queue<string> ChatLog { get; init; }
     
     public Plugin()
@@ -41,11 +41,9 @@ public sealed class Plugin : IDalamudPlugin
         if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
         ChatListener = new ChatListener(this, ChatGui);
         ChatLog = new Queue<string>((int)MaxLogHistoryCeiling);
+        SwapTTSBackend();
 
-        SwapTTSBackend(Configuration.TTSProvider);
-        var version = GetInformationalVersion();
-
-        MainWindow = new MainWindow(this, version);
+        MainWindow = new MainWindow(this, GetInformationalVersion());
         WindowSystem.AddWindow(MainWindow);
 
         CommandManager.AddHandler(CommandPrefixA, new CommandInfo(OnCommand)
@@ -131,7 +129,7 @@ public sealed class Plugin : IDalamudPlugin
         SpeakTTS(args);
     }
 
-    internal void SwapTTSBackend(TextToSpeechType ttst)
+    internal void SwapTTSBackend()
     {
         TextToSpeech?.Dispose();
         TextToSpeech = null;
@@ -140,12 +138,14 @@ public sealed class Plugin : IDalamudPlugin
         {
             case TextToSpeechType.Kokoro:
                 TextToSpeech = new STKokoro(PluginInterface.AssemblyLocation.Directory?.FullName!, PluginInterface.GetPluginConfigDirectory());
+                TextToSpeech.AudioPlayer.SetOutputDevice(Configuration.AudioOutputDevice);
                 TextToSpeech.SetVoice(KokoroVoiceHelper.ToString(Configuration.Kokoro.Voice));
                 TextToSpeech.SetSpeed(Configuration.Kokoro.Speed);
                 TextToSpeech.SetVolume(Configuration.Kokoro.Volume);
                 break;
             case TextToSpeechType.WindowsSystem:
                 TextToSpeech = new STWinSpeech();
+                TextToSpeech.AudioPlayer.SetOutputDevice(Configuration.AudioOutputDevice);
                 TextToSpeech.SetVoice(Configuration.WinSpeech.Voice);
                 TextToSpeech.SetSpeed(Configuration.WinSpeech.Speed);
                 TextToSpeech.SetVolume(Configuration.WinSpeech.Volume);
@@ -164,13 +164,6 @@ public sealed class Plugin : IDalamudPlugin
         {
             switch (Configuration.TTSProvider)
             {
-                /* case TextToSpeechType.eSpeakNG:
-                    Task.Run(() => Process.Start("/usr/bin/espeak-ng",$"\"{message}\""));
-                    break;
-                case TextToSpeechType.flite:
-                    Task.Run(() => Process.Start("/usr/bin/flite", $"-t \"{message}\""));
-                    break;
-                */
                 case TextToSpeechType.Kokoro:
                     Task.Run(() => TextToSpeech?.Speak(message, Configuration.Kokoro.UseEspeak));
                     break;
@@ -183,6 +176,7 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
+    internal void SetTTSOutputDevice(int id) => TextToSpeech?.AudioPlayer.SetOutputDevice(id);
     internal void SetTTSVoice(string voice) => TextToSpeech?.SetVoice(voice);
     internal void SetTTSVolume(float volume) => TextToSpeech?.SetVolume(volume);
     internal void SetTTSSpeed(float speed) => TextToSpeech?.SetSpeed(speed);
