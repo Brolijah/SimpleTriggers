@@ -119,13 +119,7 @@ public class STKokoro : ITextToSpeech
 
     public void SetVolume(float volume)
     {
-        try
-        {
-            AudioPlayer.SetVolume(volume);
-        } catch (Exception e)
-        {
-            STLog.Log.Warning(e,"Exception caught:");
-        }
+        AudioPlayer.SetVolume(volume);
     }
 
     public void SetSpeed(float speed)
@@ -140,15 +134,15 @@ public class STKokoro : ITextToSpeech
 
     public void Speak(string message, bool extra)
     {
-        if(TryGetKokoroModel(out var tts) && TryGetIPA(out var ipa))
+        if(TryGetKokoroModel(out var model) && TryGetIPA(out var ipa))
         {
+            AudioPlayer.StopPlayback(true);
             try
             {
                 int[]? tokens;
                 if(extra) tokens = Tokenizer.Tokenize(message, lang);
                 else      tokens = Tokenizer.TokenizePhonemes(ipa.EnglishToIPA(message).ToCharArray());
 
-                AudioPlayer.StopPlayback(true);
                 var tokensList = SegmentationSystem.SplitToSegments(tokens, new()
                 {
                     MinFirstSegmentLength = 20,
@@ -157,7 +151,7 @@ public class STKokoro : ITextToSpeech
                 });
                 foreach (var tc in tokensList)
                 {
-                    var bytes = KokoroPlayback.GetBytes(tts.Infer(tc, kv.Features, speed));
+                    var bytes = KokoroPlayback.GetBytes(model.Infer(tc, kv.Features, speed));
                     AudioPlayer.Enqueue(bytes);
                 }
             } catch (Exception e)

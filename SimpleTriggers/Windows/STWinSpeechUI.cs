@@ -56,7 +56,7 @@ public static class STWinSpeechUI
 
         // Volume and Speed
         ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
-        ImGui.SliderInt("Voice Speed", ref plugin.Configuration.WinSpeech.Speed,-5, 5, "%+d");
+        ImGui.SliderInt("Voice Speed", ref plugin.Configuration.WinSpeech.Speed,-5, 5, "%+d", ImGuiSliderFlags.NoInput);
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
             plugin.SetTTSSpeed(plugin.Configuration.WinSpeech.Speed);

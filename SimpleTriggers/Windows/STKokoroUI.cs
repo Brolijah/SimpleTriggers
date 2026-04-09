@@ -41,7 +41,7 @@ public static class STKokoroUI
 
         // Volume and Speed
         ImGui.SetNextItemWidth(192 * ImGuiHelpers.GlobalScale);
-        ImGui.SliderFloat("Voice Speed", ref plugin.Configuration.Kokoro.Speed,0.5f, 1.5f,"%.1fx");
+        ImGui.SliderFloat("Voice Speed", ref plugin.Configuration.Kokoro.Speed,0.5f, 1.5f,"%.1fx", ImGuiSliderFlags.NoInput);
         if(ImGui.IsItemDeactivatedAfterEdit())
         {
             plugin.SetTTSSpeed(plugin.Configuration.Kokoro.Speed);
@@ -74,7 +74,7 @@ public static class STKokoroUI
         }
         ImGui.SameLine();
         ImGui.PushFont(UiBuilder.IconFont);
-        ImGui.Text($"{FontAwesomeIcon.ExclamationCircle.ToIconString()}");
+        ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
         ImGui.PopFont();
         ImGuiCustom.HoverTooltip("May result in more natural voices, \nhowever if it causes issues, leave disabled.");
 

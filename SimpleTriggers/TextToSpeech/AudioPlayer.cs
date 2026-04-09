@@ -29,8 +29,7 @@ public class AudioPlayer : IDisposable
                     await semaphore.WaitAsync();
                     try {
                         var stream = new RawSourceWaveStream(packet, 0, packet.Length, waveFormat);
-                        var mix = new VolumeSampleProvider(stream.ToSampleProvider());
-                        mix.Volume = volume;
+                        var mix = new VolumeSampleProvider(stream.ToSampleProvider()) { Volume = volume };
                         waveOut.Init(mix);
                         waveOut.Play();
                         while(!hasExited && waveOut.PlaybackState == PlaybackState.Playing) { await Task.Delay(5); }
@@ -77,7 +76,7 @@ public class AudioPlayer : IDisposable
         }
     }
 
-    // volume = [0.0f, 100.0f] // technically allows values >100, and that *might* be fine? idk
+    // volume = [0.0f, 100.0f] // technically allows values >100, and that *might* be fine?
     public void SetVolume(float volume)
     {
         this.volume = volume/100f;
