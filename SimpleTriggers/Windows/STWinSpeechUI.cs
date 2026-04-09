@@ -4,9 +4,9 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface;
 using System.Speech.Synthesis;
-using System.Speech.AudioFormat;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Components;
+using System.Linq;
 
 namespace SimpleTriggers.Windows;
 
@@ -14,6 +14,7 @@ public static class STWinSpeechUI
 {
     public static void DrawWinSpeechSettings(Plugin plugin)
     {
+        var synth = new SpeechSynthesizer();
         if(!OSHelper.IsWindows())
         {
             using(var style = ImRaii.PushColor(ImGuiCol.Text, new Vector4(1.0f, 1.0f, 0, 1.0f)))
@@ -24,13 +25,24 @@ public static class STWinSpeechUI
                 ImGui.SameLine();
                 ImGui.Text("This TTS option is not supported on your OS!!");
             }
+            synth.Dispose();
             return; // We don't want the below to run if this isn't windows.
+        } else {
+            // TODO: Validate the saved voice is installed?
+            if(plugin.Configuration.WinSpeech.Voice.Length == 0) // This should only happen ONCE, ever
+            {
+                var voice = synth.GetInstalledVoices().FirstOrDefault();
+                if(voice is not null)
+                {
+                    plugin.Configuration.WinSpeech.Voice = voice.VoiceInfo.Name;
+                    plugin.Configuration.Save();
+                }
+            }
         }
 
         ImGui.SetNextItemWidth(160 * ImGuiHelpers.GlobalScale);
         using (var box = ImRaii.Combo("##WinSpeechVoiceBox", plugin.Configuration.WinSpeech.Voice, ImGuiComboFlags.HeightLarge))
         {
-            var synth = new SpeechSynthesizer();
             if(box)
             {
                 foreach(InstalledVoice voice in synth.GetInstalledVoices())
@@ -45,6 +57,7 @@ public static class STWinSpeechUI
                 }
             }
         }
+        synth.Dispose(); // not needed after this
 
         ImGui.SameLine();
         if(ImGuiComponents.IconButton(FontAwesomeIcon.Play))

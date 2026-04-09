@@ -590,6 +590,7 @@ public class MainWindow : Window, IDisposable
                         }
                     }
                 }
+                enumerator.Dispose();
             }
         }
     }
