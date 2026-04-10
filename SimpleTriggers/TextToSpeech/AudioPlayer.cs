@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using SimpleTriggers.Logger;
 
 namespace SimpleTriggers.TextToSpeech;
 
@@ -14,8 +15,8 @@ public class AudioPlayer : IDisposable
     private readonly WaveFormat waveFormat = new (24000, 16, 1);
     private readonly ConcurrentQueue<byte[]> queue = [];
     private WaveOutEvent waveOut;
-    volatile float volume = 1.0f;
-    volatile bool hasExited = false;
+    private volatile float volume = 1.0f;
+    private volatile bool hasExited = false;
 
     public AudioPlayer(string deviceId = "")
     {
@@ -42,11 +43,19 @@ public class AudioPlayer : IDisposable
 
     private int DeviceIdToNumber(string id)
     {
-        var enumerator = new MMDeviceEnumerator();
-        var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
-        for(int i = 0; i < devices.Count-1; ++i)
+        try
         {
-            if(devices[i].ID.Equals(id)) return i;
+            using(var enumerator = new MMDeviceEnumerator())
+            {
+                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+                for(int i = 0; i < devices.Count-1; ++i)
+                {
+                    if(devices[i].ID.Equals(id)) return i;
+                }
+            }
+        } catch (Exception e) {
+            STLog.Log.Error("Failed to set the output device. Will use the default (-1)");
+            STLog.Log.Error(e, "Exception caught:");
         }
         return -1;
     }

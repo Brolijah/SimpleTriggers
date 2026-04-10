@@ -11,8 +11,6 @@ using SimpleTriggers.Gui;
 using SimpleTriggers.SeFunctions;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Triggers;
-using SimpleTriggers.Logger;
-using NAudio.CoreAudioApi;
 
 namespace SimpleTriggers.Windows;
 
@@ -81,6 +79,10 @@ public class MainWindow : Window, IDisposable
 
                 using ( var tab = ImRaii.TabItem("Settings##SettingsTab"))
                 {
+                    if(ImGui.IsItemClicked())
+                    {
+                        AudioDevicesUI.RefreshDeviceList();
+                    }
                     if(tab) {
                         DrawSettingsTab();
                     }
@@ -571,28 +573,8 @@ public class MainWindow : Window, IDisposable
             ImGui.Unindent();
 
             // Output Device
-            {
-                ImGui.NewLine();
-                var enumerator = new MMDeviceEnumerator();
-                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
-                ImGui.SetNextItemWidth(300 * ImGuiHelpers.GlobalScale);
-                using (var box = ImRaii.Combo("Output Device", devices.FirstOrDefault(d => d.ID.Equals(plugin.Configuration.AudioOutputDevice))?.FriendlyName ?? devices.First().FriendlyName))
-                {
-                    if (box)
-                    {
-                        for(var i = 0; i < devices.Count-1; ++i)
-                        {
-                            if(ImGui.Selectable($"{devices[i].FriendlyName}"))
-                            {
-                                plugin.Configuration.AudioOutputDevice = devices[i].ID;
-                                plugin.SetTTSOutputDevice(i);
-                                plugin.Configuration.Save();
-                            }
-                        }
-                    }
-                }
-                enumerator.Dispose();
-            }
+            ImGui.NewLine();
+            AudioDevicesUI.DrawAudioDeviceBox(plugin);
         }
     }
 
