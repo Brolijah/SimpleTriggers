@@ -62,7 +62,7 @@ public class STWinSpeech : ITextToSpeech
     {
         if(e.Error is not null)
         {
-            STLog.Log.Error($"STWinSpeech.OnSpeakCompleted(): Error: {e.Error.Message}");
+            STLog.Log.Error(e.Error, "STWinSpeech.OnSpeakCompleted():");
             return;
         }
         if(e.Cancelled || stream == null) // don't care, abort
