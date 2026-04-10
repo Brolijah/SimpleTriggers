@@ -43,6 +43,12 @@ static public class AudioDevicesUI
 
     public static void DrawAudioDeviceBox(Plugin plugin)
     {
+        if(failed)
+        {
+            ImGui.TextColoredWrapped(new Vector4(1.0f, 1.0f, 0, 1.0f), "An error occurred trying to fetch the audio device list.\nCheck /xllog for more details.");
+            return;
+        }
+
         ImGui.SetNextItemWidth(400 * ImGuiHelpers.GlobalScale);
         using (var box = ImRaii.Combo("Output Device", DeviceCache.FirstOrDefault(d => d.ID.Equals(plugin.Configuration.AudioOutputDevice))?.Name ?? ""))
         {
@@ -63,12 +69,6 @@ static public class AudioDevicesUI
                     }
                 }
             }
-        }
-
-        if(failed)
-        {
-            ImGui.TextColoredWrapped(new Vector4(1.0f, 1.0f, 0, 1.0f), "An error occurred trying to fetch the audio device list.\nCheck /xllog for more details.");
-            return;
         }
 
         // Either it isn't populated yet or the user doesn't have any devices??
