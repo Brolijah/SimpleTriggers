@@ -1,6 +1,6 @@
 # Simple Triggers
 ![Version](https://img.shields.io/github/v/release/Brolijah/SimpleTriggers)
-![Downloads](https://img.shields.io/github/downloads/Brolijah/SimpleTriggers/total)
+[![Downloads](https://img.shields.io/endpoint?url=https://qzysathwfhebdai6xgauhz4q7m0mzmrf.lambda-url.us-east-1.on.aws/SimpleTriggers)](https://github.com/Brolijah/SimpleTriggers)
 ![Lines of Code](https://aschey.tech/tokei/github/Brolijah/SimpleTriggers?category=code)
 ![Last Commit](https://img.shields.io/github/last-commit/Brolijah/SimpleTriggers)
 
@@ -13,7 +13,7 @@ Responses can be done in one of the below methods or any combination of the thre
   * Kokoro
   * Windows System
 
-New Triggers can be created by either clicking the "Add New" button on the Triggers tab or saving a chat log message on the Chat History tab.
+New Triggers can be created by either clicking the "Add" button on the Triggers tab or saving a chat log message on the Chat History tab.
 Triggers may also be shared and imported using the Import/Export buttons.
 Chat logging is disabled by default every time the plugin starts, and once enabled you can search for specific messages it has recorded. This may be useful if you're unsure of the exact message you want to create a trigger for but only know some of the words. You can also configure how many messages should be stored at a time.
 Message history is never saved outside of the plugin running and is lost when the plugin is disabled.
