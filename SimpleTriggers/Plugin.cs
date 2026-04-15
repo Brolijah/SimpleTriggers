@@ -9,6 +9,7 @@ using System.Reflection;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Logger;
+using System;
 
 namespace SimpleTriggers;
 
@@ -112,6 +113,11 @@ public sealed class Plugin : IDalamudPlugin
                 Configuration.EnableTriggers = false;
                 Configuration.Save();
                 PrintChatMsg("All triggers are disabled.");
+            break;
+            case "toggle":
+                Configuration.EnableTriggers = !Configuration.EnableTriggers;
+                Configuration.Save();
+                PrintChatMsg(string.Format("All triggers are {0}.", Configuration.EnableTriggers ? "enabled" : "disabled"));
             break;
             case "speak":
                 var msg = args.Split(" ", 2);
