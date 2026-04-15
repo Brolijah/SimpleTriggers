@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -21,28 +22,27 @@ static public class AudioDevicesUI
 {
     private volatile static bool failed = false;
     private volatile static bool scanning = false;
-    private static List<AudioDeviceInfo> DeviceCache = [];
+    private static ImmutableList<AudioDeviceInfo> DeviceCache = [];
     private static string DefaultDeviceName = "";
 
     public static void RefreshDeviceList()
     {
         failed = false;
-        DeviceCache = new();
         if(!scanning)
         {
             scanning = true;
             new Thread(() => {
-            var tempCache = new List<AudioDeviceInfo>();
             try {
                 using(var enumerator = new MMDeviceEnumerator())
                 {
                     DefaultDeviceName = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Console).FriendlyName;
                     var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+                    var tempCache = new List<AudioDeviceInfo>(devices.Count);
                     foreach(var d in devices)
                     {
                         tempCache.Add(new AudioDeviceInfo { Name = d.FriendlyName, ID = d.ID });
                     }
-                    DeviceCache = tempCache;
+                    DeviceCache = tempCache.ToImmutableList();
                 }
             } catch (Exception e) {
                 STLog.Log.Error(e, "Exception caught:");
