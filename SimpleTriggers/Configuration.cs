@@ -2,6 +2,7 @@
 using System;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Triggers;
+using System.Collections.Generic;
 
 namespace SimpleTriggers;
 
@@ -32,6 +33,8 @@ public class Configuration : IPluginConfiguration
     public uint MaxLogHistory = 500;
     public string AudioOutputDevice = "";
     public bool AllowAudioBoost = false; // Lets the user boost the volume above a normally safe amount
+    public bool ChannelReadAllTypes = true;
+    public SortedSet<int> ChannelTypeFilter = [];
     public TextToSpeechType TTSProvider = TextToSpeechType.None;
     public KokoroConfig Kokoro { get; set; } = new();
     public WinSpeechConfig WinSpeech { get; set; } = new();

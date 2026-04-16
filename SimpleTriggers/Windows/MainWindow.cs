@@ -7,10 +7,12 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface;
+using Dalamud.Game.Text;
 using SimpleTriggers.Gui;
 using SimpleTriggers.SeFunctions;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Triggers;
+using SimpleTriggers.GameEnums;
 
 namespace SimpleTriggers.Windows;
 
@@ -353,12 +355,11 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.SameLine(ImGui.GetWindowWidth()-(125*ImGuiHelpers.GlobalScale));
-        if(ImGui.Button("Clear All Triggers")
-            && ImGui.GetIO().KeyShift)
+        if(ImGui.Button("Clear All Triggers") && ImGui.GetIO().KeyShift)
         {
             ClearAllTriggers();
         }
-        ImGuiCustom.HoverTooltip("Hold SHIFT to Clear All");
+        ImGuiCustom.HoverTooltip("Hold SHIFT+Click to Clear All");
 
         // The below is the visual for the trigger tree structure
         ImGui.Separator();
@@ -536,6 +537,102 @@ public class MainWindow : Window, IDisposable
                 plugin.Configuration.Save();
             }
 
+            ImGui.NewLine();
+        }
+
+        // Channel Settings
+        if(ImGui.CollapsingHeader("Channel Settings", ImGuiTreeNodeFlags.None))
+        {
+            ImGui.TextColoredWrapped(new Vector4(1.0f, 1.0f, 1.0f, 0.8f), "You probably want to leave this enabled.");
+            if(ImGui.Checkbox("Enable All", ref plugin.Configuration.ChannelReadAllTypes))
+            {
+                plugin.Configuration.Save();
+            }
+            ImGui.SameLine();
+            ImGui.PushFont(UiBuilder.IconFont);
+            ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
+            ImGui.PopFont();
+            ImGuiCustom.HoverTooltip(
+                "If you want finer control over what types of messages to react to,\n"+
+                "then you can disable this. If your CPU is struggling with having all\n"+
+                "channels enabled, then this might help you."
+            );
+
+            ImGui.SameLine(ImGui.GetWindowWidth()-(100*ImGuiHelpers.GlobalScale));
+            if(ImGui.Button("Reset Filters") && ImGui.GetIO().KeyShift)
+            {
+                plugin.Configuration.ChannelReadAllTypes = true;
+                plugin.Configuration.ChannelTypeFilter.Clear();
+                plugin.Configuration.Save();
+            }
+            ImGuiCustom.HoverTooltip("Hold SHIFT+Click to Reset");
+
+            if(!plugin.Configuration.ChannelReadAllTypes)
+            {
+                ImGui.Spacing();
+                // Common supported channel types
+                using(var tree = ImRaii.TreeNode("Common Channel Types"))
+                {
+                    if(tree)
+                    {
+                        using(var table = ImRaii.Table("##CommonXivChatTypes",2))
+                        {
+                            if(table)
+                            {
+                                var channels = Enum.GetValues<XivChatType>();
+                                foreach(var c in channels)
+                                {
+                                    if(c == XivChatType.None || c == XivChatType.Debug || c == XivChatType.Urgent || c == XivChatType.CrossParty)
+                                        continue;
+                                    
+                                    ImGui.TableNextColumn();
+                                    var selected = plugin.Configuration.ChannelTypeFilter.Contains((int)c);
+                                    if(ImGui.Checkbox(c.GetDetails()?.FancyName ?? c.ToString(), ref selected))
+                                    {
+                                        if(selected)
+                                        {
+                                            plugin.Configuration.ChannelTypeFilter.Add((int)c);
+                                        } else {
+                                            plugin.Configuration.ChannelTypeFilter.Remove((int)c);
+                                        }
+                                        plugin.Configuration.Save();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                ImGui.Spacing();
+                // Most of the combat messages are these
+                using(var tree = ImRaii.TreeNode("Less Common Types"))
+                {
+                    if(tree)
+                    {
+                        using(var table = ImRaii.Table("##UndocumentedXivChatTypes", 2))
+                        {
+                            if(table)
+                            {
+                                var extras = Enum.GetValues<AdditionalChatType>();
+                                foreach(var c in extras)
+                                {
+                                    ImGui.TableNextColumn();
+                                    var selected = plugin.Configuration.ChannelTypeFilter.Contains((int)c);
+                                    if(ImGui.Checkbox(c.ToString(), ref selected))
+                                    {
+                                        if(selected)
+                                        {
+                                            plugin.Configuration.ChannelTypeFilter.Add((int)c);
+                                        } else {
+                                            plugin.Configuration.ChannelTypeFilter.Remove((int)c);
+                                        }
+                                        plugin.Configuration.Save();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             ImGui.NewLine();
         }
         

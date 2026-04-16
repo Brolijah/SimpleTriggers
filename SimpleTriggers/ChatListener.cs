@@ -42,10 +42,19 @@ internal class ChatListener : IDisposable
 
     private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString message, ref bool isHandled)
     {
-        // Ignore messages sent from the plugin
-        var msgStr = SanitizeString(message.ToString());
-        if(msgStr.StartsWith($"[{plugin.Name}]")) { return; }
+        // Ignore messages coming from this plugin or others
+        if(type == XivChatType.Debug) return;
+
+        // Check our channel filter first
+        if(!plugin.Configuration.ChannelReadAllTypes)
+        {
+            if(!plugin.Configuration.ChannelTypeFilter.Contains((int)type))
+            {
+                return;
+            }
+        }
         
+        var msgStr = SanitizeString(message.ToString());
         if(plugin.Configuration.EnableTriggers)
         {
             foreach(var category in plugin.Configuration.TriggerTree)

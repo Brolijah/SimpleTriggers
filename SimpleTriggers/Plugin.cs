@@ -9,7 +9,6 @@ using System.Reflection;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Logger;
-using System;
 
 namespace SimpleTriggers;
 
