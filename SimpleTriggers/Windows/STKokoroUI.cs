@@ -23,8 +23,7 @@ public static class STKokoroUI
                 {
                     if(ImGui.Selectable(KokoroVoiceHelper.ToName((KokoroVoiceKind)i)))
                     {
-                        plugin.Configuration.Kokoro.Voice = (KokoroVoiceKind)i;
-                        plugin.SetTTSVoice(KokoroVoiceHelper.ToString((KokoroVoiceKind)i));
+                        plugin.SetTTSVoice(KokoroVoiceHelper.ToString(plugin.Configuration.Kokoro.Voice = (KokoroVoiceKind)i));
                         plugin.Configuration.Save();
                     }
                 }

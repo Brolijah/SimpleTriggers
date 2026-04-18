@@ -2,16 +2,17 @@ using System;
 using System.IO;
 using System.Speech.Synthesis;
 using SimpleTriggers.Logger;
-using SimpleTriggers.TextToSpeech;
+
+namespace SimpleTriggers.TextToSpeech;
 
 public class STWinSpeech : ITextToSpeech
 {
-    public AudioPlayer AudioPlayer { get; }
+    private readonly AudioPlayer audioPlayer;
     private SpeechSynthesizer synth {get; init;}
     private MemoryStream? stream;
-    public STWinSpeech(string outputDevice = "")
+    public STWinSpeech(AudioPlayer player)
     {
-        AudioPlayer = new AudioPlayer(outputDevice);
+        audioPlayer = player;
         synth = new SpeechSynthesizer();
         synth.SpeakCompleted += OnSpeakCompleted;
     }
@@ -29,7 +30,7 @@ public class STWinSpeech : ITextToSpeech
 
     public void SetVolume(float volume)
     {
-        AudioPlayer.SetVolume(volume);
+        audioPlayer.SetVolume(volume);
     }
 
     public void SetSpeed(float speed)
@@ -42,7 +43,7 @@ public class STWinSpeech : ITextToSpeech
 
     public void Speak(string message, bool extra)
     {
-        AudioPlayer.StopPlayback(true);
+        audioPlayer.StopPlayback(true);
         try
         {
             synth.SpeakAsyncCancelAll();
@@ -73,7 +74,7 @@ public class STWinSpeech : ITextToSpeech
         var data = new byte[stream.Length-44]; // will hold raw PCM stream without header
         stream.Position = 44;
         stream.Read(data, 0, data.Length);
-        AudioPlayer.Enqueue(data);
+        audioPlayer.Enqueue(data);
     }
 
     public bool IsInitialized()
@@ -83,7 +84,6 @@ public class STWinSpeech : ITextToSpeech
 
     public void Dispose()
     {
-        AudioPlayer.Dispose();
         synth.SpeakCompleted -= OnSpeakCompleted;
         synth.Dispose();
         stream?.Dispose();

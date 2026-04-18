@@ -33,15 +33,18 @@ public sealed class Plugin : IDalamudPlugin
     private MainWindow MainWindow { get; init; }
     private ChatListener ChatListener { get; init; }
     private ITextToSpeech? TextToSpeech { get; set; }
+    private AudioPlayer AudioPlayer { get; set; }
     internal Queue<string> ChatLog { get; init; }
     
     public Plugin()
     {
         STLog.SetLogger(Log);
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+
         if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
-        ChatListener = new ChatListener(this, ChatGui);
         ChatLog = new Queue<string>((int)MaxLogHistoryCeiling);
+        ChatListener = new ChatListener(this, ChatGui);
+        AudioPlayer = new AudioPlayer(Configuration.AudioOutputDevice, Configuration.AudioBackend);
         SwapTTSBackend();
 
         MainWindow = new MainWindow(this, GetInformationalVersion());
@@ -91,6 +94,7 @@ public sealed class Plugin : IDalamudPlugin
         MainWindow.Dispose();
         ChatListener.Dispose();
         TextToSpeech?.Dispose();
+        AudioPlayer.Dispose();
 
         CommandManager.RemoveHandler(CommandPrefixA);
         CommandManager.RemoveHandler(CommandPrefixB);
@@ -143,13 +147,13 @@ public sealed class Plugin : IDalamudPlugin
         switch (Configuration.TTSProvider)
         {
             case TextToSpeechType.Kokoro:
-                TextToSpeech = new STKokoro(PluginInterface.AssemblyLocation.Directory?.FullName!, PluginInterface.GetPluginConfigDirectory(), Configuration.AudioOutputDevice);
+                TextToSpeech = new STKokoro(PluginInterface.AssemblyLocation.Directory?.FullName!, PluginInterface.GetPluginConfigDirectory(), AudioPlayer);
                 TextToSpeech.SetVoice(KokoroVoiceHelper.ToString(Configuration.Kokoro.Voice));
                 TextToSpeech.SetSpeed(Configuration.Kokoro.Speed);
                 TextToSpeech.SetVolume(Configuration.Kokoro.Volume);
                 break;
             case TextToSpeechType.WindowsSystem:
-                TextToSpeech = new STWinSpeech(Configuration.AudioOutputDevice);
+                TextToSpeech = new STWinSpeech(AudioPlayer);
                 TextToSpeech.SetVoice(Configuration.WinSpeech.Voice);
                 TextToSpeech.SetSpeed(Configuration.WinSpeech.Speed);
                 TextToSpeech.SetVolume(Configuration.WinSpeech.Volume);
@@ -180,7 +184,8 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    internal void SetTTSOutputDevice(string id) => TextToSpeech?.AudioPlayer.SetOutputDevice(id);
+    internal void SetTTSAudioBackend(AudioOutputType type) => AudioPlayer.InitializeAudioBackend(type,null);
+    internal void SetTTSOutputDevice(string id) => AudioPlayer.SetOutputDevice(id);
     internal void SetTTSVoice(string voice) => TextToSpeech?.SetVoice(voice);
     internal void SetTTSVolume(float volume) => TextToSpeech?.SetVolume(volume);
     internal void SetTTSSpeed(float speed) => TextToSpeech?.SetSpeed(speed);

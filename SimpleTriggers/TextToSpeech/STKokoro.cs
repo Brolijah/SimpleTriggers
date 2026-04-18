@@ -18,22 +18,22 @@ public class STKokoro : ITextToSpeech
     // sha256 = c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204
     private const string ModelUri = "https://github.com/taylorchu/kokoro-onnx/releases/download/v0.2.0/kokoro-quant.onnx";
     private readonly string configPath;
+    private readonly AudioPlayer audioPlayer;
     private readonly Task<KokoroModel?> modelTask;
     private readonly Task<IPA?> ipaTask;
     private readonly CancellationTokenSource cts = new();
     private float speed = 1.0f;
     private string lang = "en-us";
     private KokoroVoice kv;
-    public AudioPlayer AudioPlayer { get; }
-    public STKokoro(string binPath, string configPath, string outputDevice = "")
+    public STKokoro(string binPath, string configPath, AudioPlayer player)
     {
+        this.audioPlayer = player;
         this.configPath = configPath;
         modelTask = LoadModelAsync();
         ipaTask = LoadDictionaryAsync(Path.Join(binPath, "en_US.txt"));     
         Tokenizer.eSpeakNGPath = Path.Join(binPath, "espeak");
         KokoroVoiceManager.LoadVoicesFromPath(Path.Join(binPath,"voices"));
         kv = KokoroVoiceManager.GetVoice("af_bella");
-        AudioPlayer = new AudioPlayer(outputDevice);
     }
 
     private async Task<IPA?> LoadDictionaryAsync(string path)
@@ -119,7 +119,7 @@ public class STKokoro : ITextToSpeech
 
     public void SetVolume(float volume)
     {
-        AudioPlayer.SetVolume(volume);
+        audioPlayer.SetVolume(volume);
     }
 
     public void SetSpeed(float speed)
@@ -136,7 +136,7 @@ public class STKokoro : ITextToSpeech
     {
         if(TryGetKokoroModel(out var model) && TryGetIPA(out var ipa))
         {
-            AudioPlayer.StopPlayback(true);
+            audioPlayer.StopPlayback(true);
             try
             {
                 int[]? tokens;
@@ -152,7 +152,7 @@ public class STKokoro : ITextToSpeech
                 foreach (var tc in tokensList)
                 {
                     var bytes = KokoroPlayback.GetBytes(model.Infer(tc, kv.Features, speed));
-                    AudioPlayer.Enqueue(bytes);
+                    audioPlayer.Enqueue(bytes);
                 }
             } catch (Exception e)
             {
@@ -171,7 +171,6 @@ public class STKokoro : ITextToSpeech
     public void Dispose()
     {
         cts.Cancel();
-        AudioPlayer.Dispose();
         if(TryGetIPA(out var ipa))
         {
             ipa.Dispose();

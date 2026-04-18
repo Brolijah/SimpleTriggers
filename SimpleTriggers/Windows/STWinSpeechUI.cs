@@ -50,9 +50,8 @@ public static class STWinSpeechUI
                     var info = voice.VoiceInfo;
                     if(ImGui.Selectable(info.Name))
                     {
-                        plugin.Configuration.WinSpeech.Voice = info.Name;
+                        plugin.SetTTSVoice(plugin.Configuration.WinSpeech.Voice = info.Name);
                         plugin.Configuration.Save();
-                        plugin.SetTTSVoice(info.Name);
                     }
                 }
             }

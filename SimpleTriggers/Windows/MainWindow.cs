@@ -594,21 +594,19 @@ public class MainWindow : Window, IDisposable
 
             if(!plugin.Configuration.ChannelReadAllTypes)
             {
+                var channels = Enum.GetValues<ChatType>();
+                using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new Vector2(20f * ImGuiHelpers.GlobalScale, 3f * ImGuiHelpers.GlobalScale));
                 ImGui.Spacing();
                 // Common player channel types
-                using(var tree = ImRaii.TreeNode("Player Chat Channels"))
+                using(var tree = ImRaii.TreeNode("Player Channels"))
                 {
                     if(tree)
                     {
                         using var table = ImRaii.Table("##PlayerChannelTypes", 2, ImGuiTableFlags.SizingFixedFit);
                         if (table)
                         {
-                            var channels = Enum.GetValues<ChatType>();
                             foreach (var c in channels)
                             {
-                                if (c is ChatType.Debug or ChatType.CrossParty)
-                                    continue;
-
                                 if (ChatTypeExtensions.IsPlayerChat(c))
                                 {
                                     ImGui.TableNextColumn();
@@ -639,8 +637,7 @@ public class MainWindow : Window, IDisposable
                         using var table = ImRaii.Table("##CombatChannelTypes", 2, ImGuiTableFlags.SizingFixedFit);
                         if (table)
                         {
-                            var extras = Enum.GetValues<ChatType>();
-                            foreach (var c in extras)
+                            foreach (var c in channels)
                             {
                                 if(ChatTypeExtensions.IsBattle(c))
                                 {
@@ -672,8 +669,7 @@ public class MainWindow : Window, IDisposable
                         using var table = ImRaii.Table("##AnnouncementTypes", 2, ImGuiTableFlags.SizingFixedFit);
                         if (table)
                         {
-                            var extras = Enum.GetValues<ChatType>();
-                            foreach (var c in extras)
+                            foreach (var c in channels)
                             {
                                 if(ChatTypeExtensions.IsAnnouncement(c))
                                 {
@@ -735,7 +731,7 @@ public class MainWindow : Window, IDisposable
 
             // Output Device
             ImGui.NewLine();
-            AudioDevicesUI.DrawAudioDeviceBox(plugin);
+            AudioDevicesUI.DrawAudioSettings(plugin);
         }
     }
     
