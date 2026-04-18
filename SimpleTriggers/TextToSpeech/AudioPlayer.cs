@@ -57,6 +57,7 @@ public class AudioPlayer : IDisposable
     {
         audioBackend = type;
         deviceGuid = deviceId ?? deviceGuid;
+        wavePlayer?.Stop();
         wavePlayer?.Dispose();
         wavePlayer = null;
         try {
@@ -72,8 +73,9 @@ public class AudioPlayer : IDisposable
             STLog.Log.Info($"Setting audio backend {{{audioBackend}}}");
         } catch (Exception e)
         {
-            STLog.Log.Error($"Failed to initialize the audio backend with type {type}");
+            STLog.Log.Error($"Failed to initialize the audio backend with type \"{type}\" and GUID \"{deviceGuid}\"");
             STLog.Log.Error(e, "Exception caught:");
+            STLog.Log.Warning("Falling back to WaveOutEvent");
             wavePlayer = new WaveOutEvent(); // uhh...
         }
         wavePlayer.Init(mixer);

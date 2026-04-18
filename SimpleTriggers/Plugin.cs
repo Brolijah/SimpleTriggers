@@ -9,6 +9,7 @@ using System.Reflection;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Logger;
+using System;
 
 namespace SimpleTriggers;
 
@@ -44,6 +45,7 @@ public sealed class Plugin : IDalamudPlugin
         if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
         ChatLog = new Queue<string>((int)MaxLogHistoryCeiling);
         ChatListener = new ChatListener(this, ChatGui);
+        if(!Enum.IsDefined(Configuration.AudioBackend)) Configuration.AudioBackend = AudioOutputType.DirectSound;
         AudioPlayer = new AudioPlayer(Configuration.AudioOutputDevice, Configuration.AudioBackend);
         SwapTTSBackend();
 
