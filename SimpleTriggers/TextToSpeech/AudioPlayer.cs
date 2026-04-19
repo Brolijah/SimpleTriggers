@@ -41,7 +41,7 @@ public class AudioPlayer : IDisposable
                 while(!hasExited && queue.TryDequeue(out var packet))
                 {
                     try {
-                        var stream = new RawSourceWaveStream(packet, 0, packet.Length, new (24000, 16, 1));
+                        using var stream = new RawSourceWaveStream(packet, 0, packet.Length, new (24000, 16, 1));
                         var vmix = new VolumeSampleProvider(stream.ToSampleProvider()) { Volume = volume };
                         var smix = new WdlResamplingSampleProvider(vmix, mixer.WaveFormat.SampleRate);
                         mixer.AddMixerInput(smix);
