@@ -136,7 +136,6 @@ public class STKokoro : ITextToSpeech
     {
         if(TryGetKokoroModel(out var model) && TryGetIPA(out var ipa))
         {
-            audioPlayer.StopPlayback(true);
             try
             {
                 int[]? tokens;

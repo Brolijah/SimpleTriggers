@@ -22,8 +22,12 @@ Message history is never saved outside of the plugin running and is lost when th
   * `/simpletriggers` or `/strig`
     * `enable`/`on` or `disable`/`off` to activate or deactivate the whole trigger system.
     * `toggle` flips the trigger system to active or inactive (same as above but as a 1-command toggle)
+    * `stop` will stop the current audio playback and any queued streams in waiting.
     * `speak <phrase>` will read aloud the requested phrase using your configured TTS.
-  * `/stspeak <phrase>` same as the above speak argument, just as a shorter command.
+  * Shorter versions of the above:
+    * `/sttoggle`
+    * `/ststop`
+    * `/stspeak <phrase>`
 
 
 ### Images

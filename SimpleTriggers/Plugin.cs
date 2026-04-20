@@ -23,7 +23,9 @@ public sealed class Plugin : IDalamudPlugin
     public string Name => "Simple Triggers";
     private const string CommandPrefixA = "/simpletriggers";
     private const string CommandPrefixB = "/strig";
+    private const string CommandToggle = "/sttoggle";
     private const string CommandSpeak = "/stspeak";
+    private const string CommandStop = "/ststop";
     internal readonly string DefaultCategoryName = "Default";
     internal uint MaxLogHistoryCeiling = 10000; // Hard coded limit. Who says? Me says.
     internal bool doLogChatHistory = false; // transient value, must be enabled by the user
@@ -46,7 +48,7 @@ public sealed class Plugin : IDalamudPlugin
         ChatLog = new Queue<string>((int)MaxLogHistoryCeiling);
         ChatListener = new ChatListener(this, ChatGui);
         if(!Enum.IsDefined(Configuration.AudioBackend)) Configuration.AudioBackend = AudioOutputType.DirectSound;
-        AudioPlayer = new AudioPlayer(Configuration.AudioOutputDevice, Configuration.AudioBackend);
+        AudioPlayer = new AudioPlayer(Configuration.AudioOutputDevice, Configuration.AudioBackend) { BlendStreams=Configuration.BlendAudioStreams };
         SwapTTSBackend();
 
         MainWindow = new MainWindow(this, GetInformationalVersion());
@@ -54,17 +56,27 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandPrefixA, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Opens the Simple Triggers window."
+            DisplayOrder=2, HelpMessage = "Opens the Simple Triggers window."
         });
 
         CommandManager.AddHandler(CommandPrefixB, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Opens the Simple Triggers window."
+            DisplayOrder=1, HelpMessage = "Opens the Simple Triggers window."
+        });
+
+        CommandManager.AddHandler(CommandToggle, new CommandInfo(OnCommandToggle)
+        {
+            DisplayOrder=3, HelpMessage = "Toggles the entire trigger system on or off."
         });
 
         CommandManager.AddHandler(CommandSpeak, new CommandInfo(OnCommandSpeak)
         {
-            HelpMessage = "Reads aloud the phrase using the configured TTS."
+            DisplayOrder=4, HelpMessage = "Reads aloud the phrase using the configured TTS."
+        });
+        
+        CommandManager.AddHandler(CommandStop, new CommandInfo(OnCommandStop)
+        {
+            DisplayOrder=5, HelpMessage = "Stops the current audio playback and removes any queued streams."
         });
 
         // Tell the UI system that we want our windows to be drawn through the window system
@@ -100,7 +112,9 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.RemoveHandler(CommandPrefixA);
         CommandManager.RemoveHandler(CommandPrefixB);
+        CommandManager.RemoveHandler(CommandToggle);
         CommandManager.RemoveHandler(CommandSpeak);
+        CommandManager.RemoveHandler(CommandStop);
     }
 
     private void OnCommand(string command, string args)
@@ -129,6 +143,9 @@ public sealed class Plugin : IDalamudPlugin
                 var msg = args.Split(" ", 2);
                 if(msg.Length > 1) SpeakTTS(msg[1]);
             break;
+            case "stop":
+                AudioPlayer.StopPlayback(true);
+            break;
 
             default:
                 MainWindow.Toggle();
@@ -136,9 +153,20 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
+    private void OnCommandToggle(string command, string args)
+    {
+        Configuration.EnableTriggers = !Configuration.EnableTriggers;
+        Configuration.Save();
+        PrintChatMsg(string.Format("All triggers are {0}.", Configuration.EnableTriggers ? "enabled" : "disabled"));
+    }
+
     private void OnCommandSpeak(string command, string args)
     {
         SpeakTTS(args);
+    }
+    private void OnCommandStop(string command, string args)
+    {
+        AudioPlayer.StopPlayback(true);
     }
 
     internal void SwapTTSBackend()
@@ -186,8 +214,9 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    internal void SetTTSAudioBackend(AudioOutputType type) => AudioPlayer.InitializeAudioBackend(type,null);
-    internal void SetTTSOutputDevice(string id) => AudioPlayer.SetOutputDevice(id);
+    internal void SetAudioBackend(AudioOutputType type) => AudioPlayer.InitializeAudioBackend(type,null);
+    internal void SetAudioOutputDevice(string id) => AudioPlayer.SetOutputDevice(id);
+    internal void SetAudioBlending(bool blend) => AudioPlayer.BlendStreams = blend;
     internal void SetTTSVoice(string voice) => TextToSpeech?.SetVoice(voice);
     internal void SetTTSVolume(float volume) => TextToSpeech?.SetVolume(volume);
     internal void SetTTSSpeed(float speed) => TextToSpeech?.SetSpeed(speed);

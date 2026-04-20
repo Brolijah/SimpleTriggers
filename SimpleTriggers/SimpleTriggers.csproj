@@ -1,11 +1,11 @@
 ﻿
 <Project Sdk="Dalamud.NET.Sdk/14.0.2">
   <PropertyGroup>
-    <Version>0.3.6.1</Version>
-    <InformationalVersion>0.3.6.1</InformationalVersion>
+    <Version>0.3.6.2</Version>
+    <InformationalVersion>0.3.6.2</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PackageProjectUrl>https://github.com/Brolijah/SimpleTriggers</PackageProjectUrl>
-    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    <PackageLicenseExpression>GPL-3.0</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <TargetFramework>net10.0</TargetFramework>
     <NoWarn>CA1416, IDE1006</NoWarn>

@@ -11,8 +11,6 @@ using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using SimpleTriggers.Logger;
 using SimpleTriggers.TextToSpeech;
-using Dalamud.Interface;
-using SimpleTriggers.Gui;
 
 namespace SimpleTriggers.Windows;
 
@@ -81,33 +79,8 @@ static public class AudioDevicesUI
         }
     }
 
-    public static void DrawAudioSettings(Plugin plugin)
+    public static void DrawAudioDeviceSettings(Plugin plugin)
     {
-        ImGui.SetNextItemWidth(200 * ImGuiHelpers.GlobalScale);
-        using(var box = ImRaii.Combo("Audio Backend", plugin.Configuration.AudioBackend.ToString()))
-        {
-            if(box)
-            {
-                foreach(var type in Enum.GetValues<AudioOutputType>())
-                {
-                    if(ImGui.Selectable(type.ToString()))
-                    {
-                        plugin.SetTTSAudioBackend(plugin.Configuration.AudioBackend = type);
-                        plugin.Configuration.Save();
-                    }
-                }
-            }
-        }
-        ImGui.SameLine();
-        ImGui.PushFont(UiBuilder.IconFont);
-        ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
-        ImGui.PopFont();
-        ImGuiCustom.HoverTooltip(
-            "Recommended to use DirectSound or Wasapi.\n"+
-            "WaveOut should be considered a backup if you encounter issues\n"+
-            "using the others. WaveOut will only use the default audio device."
-        );
-
         if(failed)
         {
             ImGui.TextColoredWrapped(new Vector4(1.0f, 1.0f, 0, 1.0f), "An error occurred trying to fetch the audio device list.\nCheck /xllog for more details.");
@@ -118,7 +91,7 @@ static public class AudioDevicesUI
         {
             if(DeviceCache.Count > 0)
             {
-                ImGui.SetNextItemWidth(400 * ImGuiHelpers.GlobalScale);
+                ImGui.SetNextItemWidth(360 * ImGuiHelpers.GlobalScale);
                 using var box = ImRaii.Combo("Output Device", DeviceCache.FirstOrDefault(d => d.ID.Contains(plugin.Configuration.AudioOutputDevice, StringComparison.CurrentCultureIgnoreCase))?.Name ?? (DefaultDeviceName + " (Default)"));
                 if (box)
                 {
@@ -126,7 +99,7 @@ static public class AudioDevicesUI
                     {
                         if (ImGui.Selectable(dc.Name))
                         {
-                            plugin.SetTTSOutputDevice(plugin.Configuration.AudioOutputDevice = dc.ID);
+                            plugin.SetAudioOutputDevice(plugin.Configuration.AudioOutputDevice = dc.ID);
                             plugin.Configuration.Save();
                         }
                     }

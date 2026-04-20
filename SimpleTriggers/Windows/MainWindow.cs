@@ -158,13 +158,13 @@ public class MainWindow : Window, IDisposable
         }
 
         // Checkbox for Sending Chat Message
-        if(ImGui.Checkbox("Send Message?", ref editing.doPostInChat))
+        if(ImGui.Checkbox("Send Message", ref editing.doPostInChat))
         {
             trigRef.doPostInChat = editing.doPostInChat;
             updateConfig = true;
         }
         // Checkbox for playing Text-to-Speech
-        if(ImGui.Checkbox("Text-to-Speech?", ref editing.doResponseTTS))
+        if(ImGui.Checkbox("Text-to-Speech", ref editing.doResponseTTS))
         {
             trigRef.doResponseTTS = editing.doResponseTTS;
             updateConfig = true;
@@ -179,7 +179,7 @@ public class MainWindow : Window, IDisposable
             }
         }
         // Checkbox for Playing Sound FX
-        if(ImGui.Checkbox("Play Sound?", ref editing.doPlaySound))
+        if(ImGui.Checkbox("Play Sound", ref editing.doPlaySound))
         {
             trigRef.doPlaySound = editing.doPlaySound;
             updateConfig = true;
@@ -500,7 +500,7 @@ public class MainWindow : Window, IDisposable
                             if(pop)
                             {
                                 state.chatIndex = index;
-                                if(ImGui.MenuItem("Save to Triggers?"))
+                                if(ImGui.MenuItem("Save to Triggers"))
                                 {
                                     AddTrigger(new TriggerEntry(ses), plugin.DefaultCategoryName);
                                     state.chatIndex = -1;
@@ -526,12 +526,12 @@ public class MainWindow : Window, IDisposable
         // General Options
         if(ImGui.CollapsingHeader("General", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            if(ImGui.Checkbox("Enable All Triggers?", ref plugin.Configuration.EnableTriggers))
+            if(ImGui.Checkbox("Enable All Triggers", ref plugin.Configuration.EnableTriggers))
             {
                 plugin.Configuration.Save();
             }
 
-            if(ImGui.Checkbox("Log Chat History?", ref plugin.doLogChatHistory) && !plugin.doLogChatHistory)
+            if(ImGui.Checkbox("Log Chat History", ref plugin.doLogChatHistory) && !plugin.doLogChatHistory)
             {
                 //plugin.ChatLog.Clear();
             }
@@ -551,7 +551,7 @@ public class MainWindow : Window, IDisposable
         }
 
         // Channel Settings
-        if(ImGui.CollapsingHeader("Channel Settings", ImGuiTreeNodeFlags.None))
+        if(ImGui.CollapsingHeader("Channel Settings", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGui.TextColoredWrapped(new Vector4(1.0f, 1.0f, 1.0f, 0.8f), "You probably want to leave these enabled.");
             if(ImGui.Checkbox("Enable All", ref plugin.Configuration.ChannelReadAllTypes))
@@ -728,10 +728,46 @@ public class MainWindow : Window, IDisposable
                 STWinSpeechUI.DrawWinSpeechSettings(plugin);
             }
             ImGui.Unindent();
-
-            // Output Device
             ImGui.NewLine();
-            AudioDevicesUI.DrawAudioSettings(plugin);
+        }
+
+        // Other audio settings
+        if(ImGui.CollapsingHeader("Audio Settings", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            AudioDevicesUI.DrawAudioDeviceSettings(plugin);
+
+            ImGui.SetNextItemWidth(200 * ImGuiHelpers.GlobalScale);
+            using(var box = ImRaii.Combo("Audio Backend", plugin.Configuration.AudioBackend.ToString()))
+            {
+                if(box)
+                {
+                    foreach(var type in Enum.GetValues<AudioOutputType>())
+                    {
+                        if(ImGui.Selectable(type.ToString()))
+                        {
+                            plugin.SetAudioBackend(plugin.Configuration.AudioBackend = type);
+                            plugin.Configuration.Save();
+                        }
+                    }
+                }
+            }
+            ImGui.SameLine();
+            ImGui.PushFont(UiBuilder.IconFont);
+            ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
+            ImGui.PopFont();
+            ImGuiCustom.HoverTooltip(
+                "Recommended to use DirectSound or Wasapi.\n"+
+                "WaveOut should be considered a backup if you encounter issues\n"+
+                "using the others. WaveOut will only use the default audio device."
+            );
+
+            if(ImGui.Checkbox("Allow audio streams to overlap.", ref plugin.Configuration.BlendAudioStreams))
+            {
+                plugin.SetAudioBlending(plugin.Configuration.BlendAudioStreams);
+                plugin.Configuration.Save();
+            }
+
+            ImGui.NewLine();
         }
     }
     

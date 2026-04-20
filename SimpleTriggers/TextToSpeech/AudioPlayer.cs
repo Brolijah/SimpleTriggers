@@ -24,6 +24,7 @@ public class AudioPlayer : IDisposable
     private AudioOutputType audioBackend;
     private IWavePlayer? wavePlayer;
     private readonly MixingSampleProvider mixer;
+    public volatile bool BlendStreams = true; // when true, allows audio streams to be blended together (or "overlap")
     private volatile float volume = 1.0f;
     private volatile bool hasExited = false;
 
@@ -41,11 +42,11 @@ public class AudioPlayer : IDisposable
                 while(!hasExited && queue.TryDequeue(out var packet))
                 {
                     try {
-                        using var stream = new RawSourceWaveStream(packet, 0, packet.Length, new (24000, 16, 1));
+                        var stream = new RawSourceWaveStream(packet, 0, packet.Length, new (24000, 16, 1));
                         var vmix = new VolumeSampleProvider(stream.ToSampleProvider()) { Volume = volume };
                         var smix = new WdlResamplingSampleProvider(vmix, mixer.WaveFormat.SampleRate);
                         mixer.AddMixerInput(smix);
-                        //await Task.Delay(stream.TotalTime); // prevents streams from overlapping (it's funnier not to)
+                        if(!BlendStreams) await Task.Delay(stream.TotalTime); // prevents streams from overlapping
                     } catch (Exception e)
                     { STLog.Log.Error(e, "Exception caught:"); }
                 }
@@ -105,6 +106,7 @@ public class AudioPlayer : IDisposable
     
     public void StopPlayback(bool clearQueue = false)
     {
+        mixer.RemoveAllMixerInputs();
         if(clearQueue)
         {
             queue.Clear();

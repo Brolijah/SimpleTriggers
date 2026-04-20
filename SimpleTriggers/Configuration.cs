@@ -34,6 +34,7 @@ public class Configuration : IPluginConfiguration
     public AudioOutputType AudioBackend = AudioOutputType.DirectSound;
     public string AudioOutputDevice = "";
     public bool AllowAudioBoost = false; // Lets the user boost the volume above a normally safe amount
+    public bool BlendAudioStreams = true;
     public bool ChannelReadAllTypes = true;
     public bool IgnoreDamageAndHealing = true;
     public SortedSet<int> ChannelTypeFilter = [];
