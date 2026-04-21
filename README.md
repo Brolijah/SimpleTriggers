@@ -31,7 +31,7 @@ Message history is never saved outside of the plugin running and is lost when th
 
 
 ### Images
-![](https://i.imgur.com/QCiTMNO.png) ![](https://i.imgur.com/mlLyTKy.png)
+![](https://i.imgur.com/QCiTMNO.png) ![](https://i.imgur.com/fKSEDSk.png)
 
 
 ## Known Issues

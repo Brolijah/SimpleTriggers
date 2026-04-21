@@ -164,6 +164,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         SpeakTTS(args);
     }
+
     private void OnCommandStop(string command, string args)
     {
         AudioPlayer.StopPlayback(true);
@@ -214,6 +215,7 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
+    internal void StopAudioPlayback(bool clearQueue = false) => AudioPlayer.StopPlayback(clearQueue);
     internal void SetAudioBackend(AudioOutputType type) => AudioPlayer.InitializeAudioBackend(type,null);
     internal void SetAudioOutputDevice(string id) => AudioPlayer.SetOutputDevice(id);
     internal void SetAudioBlending(bool blend) => AudioPlayer.BlendStreams = blend;

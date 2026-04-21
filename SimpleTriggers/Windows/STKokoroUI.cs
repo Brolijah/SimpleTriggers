@@ -72,10 +72,7 @@ public static class STKokoroUI
             plugin.Configuration.Save();
         }
         ImGui.SameLine();
-        ImGui.PushFont(UiBuilder.IconFont);
-        ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
-        ImGui.PopFont();
-        ImGuiCustom.HoverTooltip("May result in more natural voices, \nhowever if it causes issues, leave disabled.");
+        ImGuiCustom.IconTooltip("May result in more natural voices, \nhowever if it causes issues, leave disabled.");
 
         // Show language setting -- only espeak compatible
         if(plugin.Configuration.Kokoro.UseEspeak)

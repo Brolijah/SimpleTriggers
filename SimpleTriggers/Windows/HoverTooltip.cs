@@ -1,5 +1,6 @@
 // (c) 2025 Ottermandias (ChatAlerts)
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 
 namespace SimpleTriggers.Gui
 {
@@ -9,6 +10,14 @@ namespace SimpleTriggers.Gui
         {
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(text);
+        }
+
+        public static void IconTooltip(string text, FontAwesomeIcon icon = FontAwesomeIcon.ExclamationCircle)
+        {
+            ImGui.PushFont(UiBuilder.IconFont);
+            ImGui.Text(icon.ToIconString());
+            ImGui.PopFont();
+            HoverTooltip(text);
         }
     }
 }

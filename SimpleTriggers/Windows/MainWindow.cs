@@ -559,10 +559,7 @@ public class MainWindow : Window, IDisposable
                 plugin.Configuration.Save();
             }
             ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
-            ImGui.PopFont();
-            ImGuiCustom.HoverTooltip(
+            ImGuiCustom.IconTooltip(
                 "If you want finer control over what types of messages to react to,\n"+
                 "then you can disable this. Or, if your CPU is struggling with having\n"+
                 "all channels enabled, then turning this off this might help you."
@@ -583,10 +580,7 @@ public class MainWindow : Window, IDisposable
                 plugin.Configuration.Save();
             }
             ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
-            ImGui.PopFont();
-            ImGuiCustom.HoverTooltip(
+            ImGuiCustom.IconTooltip(
                 "It is recommended to leave this enabled.\n"+
                 "The bulk of the battle log originates from damage and healing\n"+
                 "sources. You will save a lot of CPU cycles leaving this checked."
@@ -736,7 +730,7 @@ public class MainWindow : Window, IDisposable
         {
             AudioDevicesUI.DrawAudioDeviceSettings(plugin);
 
-            ImGui.SetNextItemWidth(200 * ImGuiHelpers.GlobalScale);
+            ImGui.SetNextItemWidth(160 * ImGuiHelpers.GlobalScale);
             using(var box = ImRaii.Combo("Audio Backend", plugin.Configuration.AudioBackend.ToString()))
             {
                 if(box)
@@ -752,10 +746,7 @@ public class MainWindow : Window, IDisposable
                 }
             }
             ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            ImGui.Text(FontAwesomeIcon.ExclamationCircle.ToIconString());
-            ImGui.PopFont();
-            ImGuiCustom.HoverTooltip(
+            ImGuiCustom.IconTooltip(
                 "Recommended to use DirectSound or Wasapi.\n"+
                 "WaveOut should be considered a backup if you encounter issues\n"+
                 "using the others. WaveOut will only use the default audio device."
@@ -765,6 +756,11 @@ public class MainWindow : Window, IDisposable
             {
                 plugin.SetAudioBlending(plugin.Configuration.BlendAudioStreams);
                 plugin.Configuration.Save();
+            }
+            ImGui.Spacing();
+            if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.Times, "STOP PLAYBACK"))
+            {
+                plugin.StopAudioPlayback(true);
             }
 
             ImGui.NewLine();
