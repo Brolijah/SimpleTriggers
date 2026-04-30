@@ -7,7 +7,6 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface;
-using Dalamud.Game.Text;
 using SimpleTriggers.Gui;
 using SimpleTriggers.SeFunctions;
 using SimpleTriggers.TextToSpeech;
@@ -116,7 +115,7 @@ public class MainWindow : Window, IDisposable
                 trigRef.expression = editing.expression;
                 if(state.activeTrigger is null)
                 {
-                    AddTrigger(trigRef, plugin.DefaultCategoryName);
+                    AddTrigger(trigRef, editingCatName);
                     RefreshSelectionState(editingCatName, true);
                     plugin.Configuration.Save();
                 }
@@ -133,6 +132,8 @@ public class MainWindow : Window, IDisposable
             trigRef.response = editing.response;
             updateConfig = true;
         }
+
+        if(state.activeCategory is null) { ImGui.BeginDisabled(); }
         // Text box for Category name.
         ImGui.AlignTextToFramePadding();
         ImGui.Text("Category Name:");
@@ -156,7 +157,8 @@ public class MainWindow : Window, IDisposable
                 updateConfig = true;
             }
         }
-
+        if(state.activeCategory is null) { ImGui.EndDisabled(); }
+        if(state.activeTrigger is null) { ImGui.BeginDisabled(); }
         // Checkbox for Sending Chat Message
         if(ImGui.Checkbox("Send Message", ref editing.doPostInChat))
         {
@@ -208,6 +210,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.EndCombo();
             }
         }
+        if(state.activeTrigger is null) { ImGui.EndDisabled(); }
 
         // Import Button
         if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.FileImport, "Import"))
@@ -243,15 +246,19 @@ public class MainWindow : Window, IDisposable
             string export;
             if(state.activeCategory is not null)
             {
+                var nTrig = 0;
                 // export just the selected trigger
                 if(state.activeTrigger is not null)
                 {
                     export = TriggerPreset.Export(new TriggerCategory(state.activeCategory.Name, [state.activeTrigger]));
+                    nTrig = 1;
                 } else // export whole cateogry
                 {
                     export = TriggerPreset.Export(state.activeCategory);
+                    nTrig = state.activeCategory.Triggers.Count;
                 }
                 ImGui.SetClipboardText(export);
+                plugin.PrintChatMsg($"Copied {nTrig} trigger(s) from \"{state.activeCategory.Name}\" to the clipboard.");
             }
         }
 
