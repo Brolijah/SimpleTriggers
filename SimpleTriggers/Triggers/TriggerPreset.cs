@@ -34,7 +34,7 @@ public static class TriggerPreset
                 var tc = plugin.Configuration.TriggerTree[import.Name]!;
                 foreach(var te in import.Triggers)
                 {
-                    tc.AddTrigger(te);
+                    tc.Add(te);
                 }
             }
             buffer = "";

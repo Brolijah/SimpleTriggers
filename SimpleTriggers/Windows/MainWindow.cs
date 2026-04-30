@@ -149,7 +149,8 @@ public class MainWindow : Window, IDisposable
                     if(state.activeTrigger is not null)
                     {
                         // Remove the trigger from the current category
-                        RemoveTrigger(state.trigSubIndex, state.activeCategory.Name);
+                        state.activeCategory.Remove(state.activeTrigger);
+                        if(state.activeCategory.IsEmpty()) { plugin.Configuration.TriggerTree.Remove(state.activeCategory); }
                         // Insert trigger into new category (existing or will create a new one)
                         AddTrigger(state.activeTrigger, editingCatName);
                         RefreshSelectionState(editingCatName, true);
@@ -276,14 +277,15 @@ public class MainWindow : Window, IDisposable
 
         // Remove Trigger/Category
         ImGui.SameLine();
-        if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.TrashAlt, "Remove"))// && state.trigSubIndex != -1)
+        if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.TrashAlt, "Remove"))
         {
             if(state.activeCategory is not null)
             {
                 // Remove a single trigger
                 if(state.activeTrigger is not null)
                 {
-                    RemoveTrigger(state.trigSubIndex, state.activeCategory.Name);
+                    state.activeCategory.Remove(state.activeTrigger);
+                    if(state.activeCategory.IsEmpty()) { plugin.Configuration.TriggerTree.Remove(state.activeCategory); }
                     state.Reset();
                     plugin.Configuration.Save();
                 } else {
@@ -300,7 +302,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.Text("Are you sure you want to remove this category \nand all the triggers contained within?\nThis action cannot be undone.");
                 if(ImGui.Button("OK"))
                 {
-                    plugin.Configuration.TriggerTree.Remove(state.activeCategory!.Name);
+                    plugin.Configuration.TriggerTree.Remove(state.activeCategory!);
                     plugin.Configuration.Save();
                     state.Reset();
                     ImGui.CloseCurrentPopup();
@@ -371,7 +373,7 @@ public class MainWindow : Window, IDisposable
         ImGui.SameLine(ImGui.GetWindowWidth()-(125*ImGuiHelpers.GlobalScale));
         if(ImGui.Button("Clear All Triggers") && ImGui.GetIO().KeyShift)
         {
-            plugin.Configuration.TriggerTree.Clear();
+            plugin.Configuration.TriggerTree.ClearAll();
             plugin.Configuration.Save();
         }
         ImGuiCustom.HoverTooltip("Hold SHIFT+Click to Clear All");
@@ -435,10 +437,12 @@ public class MainWindow : Window, IDisposable
                                     {
                                         state.trigListIndex = idx;
                                         state.trigSubIndex = subIdx;
+                                        state.activeTrigger = trigger;
                                         state.activeCategory = category;
                                         if(ImGui.MenuItem("Remove Trigger"))
                                         {
-                                            RemoveTrigger(subIdx, category.Name);
+                                            category.Remove(trigger);
+                                            if(category.IsEmpty()) { plugin.Configuration.TriggerTree.Remove(category); }
                                             state.Reset();
                                             plugin.Configuration.Save();
                                             break; // exit the loop because the list is now invalidated
@@ -788,19 +792,6 @@ public class MainWindow : Window, IDisposable
         } else
         {
             plugin.Configuration.TriggerTree.Add(new TriggerCategory(categoryName, [trig]));
-        }
-    }
-
-    private void RemoveTrigger(int idx, string categoryName)
-    {
-        var category = plugin.Configuration.TriggerTree[categoryName];
-        if(category is not null)
-        {
-            category.Triggers.RemoveAt(idx);
-            if(category.Triggers.Count == 0)
-            {
-                plugin.Configuration.TriggerTree.Remove(categoryName);
-            }
         }
     }
 

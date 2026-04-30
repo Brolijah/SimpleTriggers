@@ -38,10 +38,9 @@ public class TriggerTree
         categories.RemoveAt(index);
     }
 
-    public void Remove(string name)
+    public void Remove(TriggerCategory tc)
     {
-        var index = categories.FindIndex(c => c.Name == name);
-        if(index > -1) categories.RemoveAt(index);
+        categories.Remove(tc);
     }
 
     public void SwapCategories(int idx1, int idx2)
@@ -51,10 +50,9 @@ public class TriggerTree
         categories[idx2] = temp;
     }
 
-    public void Clear()
+    public void ClearAll()
     {
         categories.Clear();
-        categories.Add(new TriggerCategory("Default"));
     }
 
     public int GetIndexOfCategory(string name)

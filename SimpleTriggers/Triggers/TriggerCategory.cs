@@ -44,30 +44,22 @@ public class TriggerCategory
         Triggers = [];
     }
 
-    public void AddTrigger(TriggerEntry te)
+    public void Add(TriggerEntry te)
     {
         Triggers.Add(te);
     }
 
-    public void RemoveTrigger(TriggerEntry te)
+    public void Remove(TriggerEntry te)
     {
         Triggers.Remove(te);
     }
 
-    public void RemoveAt(int idx)
-    {
-        Triggers.RemoveAt(idx);
-    }
+    public bool IsEmpty() => Triggers.Count == 0;
 
     public void SwapTriggers(int idx1, int idx2)
     {
         var temp = new TriggerEntry(Triggers.ElementAt(idx1));
         Triggers[idx1] = Triggers[idx2];
         Triggers[idx2] = temp;
-    }
-
-    public void Clear()
-    {
-        Triggers.Clear();
     }
 }
