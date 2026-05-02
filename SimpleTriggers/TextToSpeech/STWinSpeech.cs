@@ -14,6 +14,7 @@ public class STWinSpeech : ITextToSpeech
     public STWinSpeech(AudioPlayer player)
     {
         audioPlayer = player;
+        audioPlayer.SetSourceWaveFormat(24000, 1);
         synth = new SpeechSynthesizer();
     }
 

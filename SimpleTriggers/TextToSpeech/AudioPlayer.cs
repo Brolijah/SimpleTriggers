@@ -23,6 +23,7 @@ public class AudioPlayer : IDisposable
     private string deviceGuid;
     private AudioOutputType audioBackend;
     private IWavePlayer? wavePlayer;
+    private WaveFormat conversionFormat = new (24000, 16, 1);
     private readonly MixingSampleProvider mixer;
     public volatile bool BlendStreams = true; // when true, allows audio streams to be blended together (or "overlap")
     private volatile float volume = 1.0f;
@@ -42,7 +43,7 @@ public class AudioPlayer : IDisposable
                 while(!hasExited && queue.TryDequeue(out var packet))
                 {
                     try {
-                        var stream = new RawSourceWaveStream(packet, 0, packet.Length, new (24000, 16, 1));
+                        var stream = new RawSourceWaveStream(packet, 0, packet.Length, conversionFormat);
                         var vmix = new VolumeSampleProvider(stream.ToSampleProvider()) { Volume = volume };
                         var smix = new WdlResamplingSampleProvider(vmix, mixer.WaveFormat.SampleRate);
                         mixer.AddMixerInput(smix);
@@ -117,6 +118,11 @@ public class AudioPlayer : IDisposable
     public void SetVolume(float volume)
     {
         this.volume = volume/100f;
+    }
+
+    public void SetSourceWaveFormat(int sampleRate, int channels, int bitDepth = 16)
+    {
+        conversionFormat = new WaveFormat(sampleRate, bitDepth, channels);
     }
 
     public void Dispose()

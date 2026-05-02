@@ -1,8 +1,8 @@
 ﻿
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>1.0.1.1</Version>
-    <InformationalVersion>1.0.1.1</InformationalVersion>
+    <Version>1.0.2.0</Version>
+    <InformationalVersion>1.0.2.0-dectalk</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PackageProjectUrl>https://github.com/Brolijah/SimpleTriggers</PackageProjectUrl>
     <PackageLicenseExpression>GPL-3.0</PackageLicenseExpression>
@@ -14,6 +14,10 @@
 
   <ItemGroup>
     <Content Include="..\Data\en_US.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+    <Content Include="..\Data\dectalk\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>

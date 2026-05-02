@@ -24,6 +24,14 @@ public class WinSpeechConfig
     public WinSpeechConfig() {}
 }
 
+public class DecTalkConfig
+{
+    public DecTalkVoice Voice = DecTalkVoice.PAUL; // 0
+    public int Speed = 200; // [50, 500]
+    public int Volume = 100; // [0, 100]
+    public DecTalkConfig() {}
+}
+
 
 [Serializable]
 public class Configuration : IPluginConfiguration
@@ -41,6 +49,7 @@ public class Configuration : IPluginConfiguration
     public TextToSpeechType TTSProvider = TextToSpeechType.None;
     public KokoroConfig Kokoro { get; set; } = new();
     public WinSpeechConfig WinSpeech { get; set; } = new();
+    public DecTalkConfig DecTalk { get; set; } = new();
     public TriggerTree TriggerTree { get; set; } = new();
 
     // The below exists just to make saving less cumbersome

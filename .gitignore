@@ -4,3 +4,4 @@ obj/
 bin/
 *.onnx
 *.user
+Data/dectalk/dectalk/*

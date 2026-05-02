@@ -5,6 +5,7 @@ public enum TextToSpeechType : byte
     None = 0,
     Kokoro,
     WindowsSystem,
+    DecTalk,
     //eSpeakNG,
     //flite
 }
@@ -18,6 +19,7 @@ public static class TTSProviders
             TextToSpeechType.None           => "None",
             TextToSpeechType.Kokoro         => "Kokoro",
             TextToSpeechType.WindowsSystem  => "Windows System",
+            TextToSpeechType.DecTalk        => "DECTalk",
             //TextToSpeechType.eSpeakNG       => "espeak-ng",
             //TextToSpeechType.flite          => "flite",
             _                               => ""

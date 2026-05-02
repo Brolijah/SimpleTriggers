@@ -27,7 +27,8 @@ public class STKokoro : ITextToSpeech
     private KokoroVoice kv;
     public STKokoro(string binPath, string configPath, AudioPlayer player)
     {
-        this.audioPlayer = player;
+        audioPlayer = player;
+        audioPlayer.SetSourceWaveFormat(24000, 1);
         this.configPath = configPath;
         modelTask = LoadModelAsync();
         ipaTask = LoadDictionaryAsync(Path.Join(binPath, "en_US.txt"));     

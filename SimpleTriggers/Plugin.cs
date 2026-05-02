@@ -193,6 +193,12 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetSpeed(Configuration.WinSpeech.Speed);
                 TextToSpeech.SetVolume(Configuration.WinSpeech.Volume);
                 break;
+            case TextToSpeechType.DecTalk:
+                TextToSpeech = new DecTalk(PluginInterface.AssemblyLocation.Directory?.FullName!, AudioPlayer);
+                TextToSpeech.SetVoice(DecTalkVoiceHelper.ToString(Configuration.DecTalk.Voice));
+                TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
+                TextToSpeech.SetVolume(Configuration.DecTalk.Volume);
+                break;
         }
     }
 
@@ -225,6 +231,7 @@ public sealed class Plugin : IDalamudPlugin
                     TextToSpeech?.Speak(msg, Configuration.Kokoro.UseEspeak);
                     break;
                 case TextToSpeechType.WindowsSystem:
+                case TextToSpeechType.DecTalk:
                     TextToSpeech?.Speak(msg);
                     break;
                 default:
