@@ -97,6 +97,7 @@ public unsafe partial class DecTalkImports {
     {
         NativeLibrary.Free(pHandle);
         pHandle = IntPtr.Zero;
+        GC.Collect();
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Auto)]

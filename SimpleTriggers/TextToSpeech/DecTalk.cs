@@ -23,6 +23,8 @@ public class DecTalk : ITextToSpeech {
     //   sha256: 9ccad42378b01581ad6cd2fdfcf3af565c8d8bb87008d56360a1c67b27029fb1
     // AMD64/dic/dtalk_us.dic
     //   sha256: 3aab048d867585185bbff239181f46342403a1d151942d2d544a42e5b621373c
+    private DecTalkVoice voice = DecTalkVoice.PAUL;
+    private uint speed = 200;
 
     public DecTalk(string configPath, AudioPlayer player)
     {
@@ -62,9 +64,14 @@ public class DecTalk : ITextToSpeech {
                 var resPath = Path.Join(configPath, "dectalk");
                 if(!Directory.Exists(resPath)) Directory.CreateDirectory(resPath);
                 using var client = new HttpClient();
-                using var response = await client.GetAsync(ZipUrl, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                using var responseStream = await response.Content.ReadAsStreamAsync(cts.Token);
-                using var zip = new ZipArchive(responseStream);
+                var zipData = await client.GetByteArrayAsync(ZipUrl);
+                if(!(Convert.ToHexStringLower(SHA256.HashData(zipData)) == "4a778056c109b37f95ade4b3d3e308b9396b22a4b0629f9756ec0e5051b9636d"))
+                {
+                    STLog.Log.Error("Something is wrong with the source DECtalk archive! Aborting download!!");
+                    return false;
+                }
+                using var stream = new MemoryStream(zipData);
+                using var zip = new ZipArchive(stream);
                 foreach(var file in zipFiles)
                 {
                     var entry = zip.GetEntry(file.path)!;
@@ -130,12 +137,13 @@ public class DecTalk : ITextToSpeech {
 
     public void SetVoice(string voice)
     {
-        if(!IsInitialized()) return;
         if(!Enum.TryParse(voice, true, out DecTalkVoice dv))
         {
             STLog.Log.Warning($"Could not find voice {voice}. Falling back to default.");
             dv = DecTalkVoice.PAUL;
         }
+        this.voice = dv;
+        if(!IsInitialized()) return;
         try {
             AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, dv), "TextToSpeechSetSpeaker");
         } catch (Exception e) {
@@ -150,9 +158,10 @@ public class DecTalk : ITextToSpeech {
 
     public void SetSpeed(float speed)
     {
+        this.speed = (uint)speed;
         if(!IsInitialized()) return;
         try {
-            AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, (uint)speed), "TextToSpeechSetRate");
+            AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
         } catch (Exception e) {
             STLog.Log.Error(e, "Exception caught:");
         }
@@ -184,6 +193,9 @@ public class DecTalk : ITextToSpeech {
                 AssertCall(
                     DecTalkImports.TextToSpeechOpenInMemory(this.handle, DecTalkImports.WaveFormat.WAVE_FORMAT_1M16),
                     "TextToSpeechOpenInMemory");
+                // workaround for a race condition where these may be set before the library is loaded
+                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, this.voice), "TextToSpeechSetSpeaker");
+                AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
             } catch (Exception e) {
                 STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
                 this.handle = IntPtr.Zero;
