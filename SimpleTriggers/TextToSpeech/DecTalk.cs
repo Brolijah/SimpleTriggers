@@ -11,11 +11,11 @@ using SimpleTriggers.Logger;
 namespace SimpleTriggers.TextToSpeech;
 
 public class DecTalk : ITextToSpeech {
-    private readonly string configPath;
     private nint handle = IntPtr.Zero;
     private readonly Task<bool> libraryTask;
     private readonly AudioPlayer audioPlayer;
     private readonly CancellationTokenSource cts = new();
+    private readonly string configPath;
     private const string ZipUrl = "https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip";
     // https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip
     //   sha256: 4a778056c109b37f95ade4b3d3e308b9396b22a4b0629f9756ec0e5051b9636d
@@ -76,10 +76,8 @@ public class DecTalk : ITextToSpeech {
                     await output.FlushAsync();
                 }
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
-            this.handle = IntPtr.Zero;
             return false;
         }
         return true;
@@ -91,8 +89,7 @@ public class DecTalk : ITextToSpeech {
             Reset(true);
             AssertCall(DecTalkImports.TextToSpeechShutdown(this.handle),"TextToSpeechShutdown");
             DecTalkImports.Free();
-        } catch(Exception e)
-        {
+        } catch(Exception e) {
             STLog.Log.Error(e, "DecTalk.Dispose(): Exception caught:");
         }
         GC.SuppressFinalize(this);
@@ -126,8 +123,7 @@ public class DecTalk : ITextToSpeech {
                 Marshal.FreeHGlobal(buffer.Data);
                 Reset(false);
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             STLog.Log.Error(e, "DecTalk.Speak(): Exception caught:");
         }
     }
@@ -142,8 +138,7 @@ public class DecTalk : ITextToSpeech {
         }
         try {
             AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, dv), "TextToSpeechSetSpeaker");
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             STLog.Log.Error(e, "Exception caught:");
         }
     }
@@ -158,8 +153,7 @@ public class DecTalk : ITextToSpeech {
         if(!IsInitialized()) return;
         try {
             AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, (uint)speed), "TextToSpeechSetRate");
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             STLog.Log.Error(e, "Exception caught:");
         }
     }
@@ -190,8 +184,7 @@ public class DecTalk : ITextToSpeech {
                 AssertCall(
                     DecTalkImports.TextToSpeechOpenInMemory(this.handle, DecTalkImports.WaveFormat.WAVE_FORMAT_1M16),
                     "TextToSpeechOpenInMemory");
-            } catch (Exception e)
-            {
+            } catch (Exception e) {
                 STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
                 this.handle = IntPtr.Zero;
             }
