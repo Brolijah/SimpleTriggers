@@ -13,19 +13,12 @@ public class DecTalk : ITextToSpeech {
     {
         audioPlayer = player;
         audioPlayer.SetSourceWaveFormat(11025, 1);
-        var dllPath = Path.Join(dtResPath, "dectalk/dtalk_us.dll");
-        if(!DecTalkImports.IsLoaded(dllPath))
-        {
-            // sha256: a3dd5cedf74abc0c5bc1c6aef34ec96287ed5fe256b72d4df1ce52db9146e586
-            DecTalkImports.SetupResolver(dllPath);
-        } else { STLog.Log.Warning("DECTalk DLL already loaded."); }
-
+        // sha256: a3dd5cedf74abc0c5bc1c6aef34ec96287ed5fe256b72d4df1ce52db9146e586
+        DecTalkImports.SetupResolver(Path.Join(dtResPath, "dectalk/dtalk_us.dll"));
         var dictionaryPath = Path.Join(dtResPath, "dectalk/dtalk_us.dic");
         AssertCall(
-            DecTalkImports.TextToSpeechStartupExFonix(ref this.handle, DecTalkImports.WaveMapper, 0,
-                nint.Zero, 0,
-                dictionaryPath
-            ),"TextToSpeechStartup");
+            DecTalkImports.TextToSpeechStartupExFonix(ref this.handle, -1, 0, nint.Zero, 0, dictionaryPath),
+            "TextToSpeechStartup");
         AssertCall(
             DecTalkImports.TextToSpeechOpenInMemory(this.handle, DecTalkImports.WaveFormat.WAVE_FORMAT_1M16),
             "TextToSpeechOpenInMemory");
@@ -36,6 +29,7 @@ public class DecTalk : ITextToSpeech {
         try {
             Reset(true);
             AssertCall(DecTalkImports.TextToSpeechShutdown(this.handle),"TextToSpeechShutdown");
+            DecTalkImports.Free();
         } catch(Exception e)
         {
             STLog.Log.Error(e, "DecTalk.Dispose(): Exception caught:");
@@ -49,13 +43,19 @@ public class DecTalk : ITextToSpeech {
             // If something bad happens here... pray
             unsafe {
                 var syncText = text + " [:sync]";
-                var buffSize = 1024 * 1024 * 8; // no shot a trigger will be this big, but I'd rather it be too big than lock up
+                // For some reason punctuation locks it up, needs deeper testing
+                syncText = syncText.Replace(".", "");
+                syncText = syncText.Replace(",", "");
+                syncText = syncText.Replace("!", "");
+                syncText = syncText.Replace("?", "");
+
+                var buffSize = 1024 * 1024 * 2; // 2MB
                 var buffer = new DecTalkImports.TTS_BUFFER();
                 buffer.Data = Marshal.AllocHGlobal(buffSize);
                 buffer.MaximumBufferLength = buffSize;
                 AssertCall(DecTalkImports.TextToSpeechAddBuffer(this.handle, &buffer), "TextToSpeechAddBuffer");
-                AssertCall(DecTalkImports.TextToSpeechSpeak(this.handle, syncText, DecTalkImports.SpeechFlags.Force),"TextToSpeechSpeak");
-                AssertCall(DecTalkImports.TextToSpeechSync(this.handle),"TextToSpeechSync");
+                AssertCall(DecTalkImports.TextToSpeechSpeak(this.handle, syncText, DecTalkImports.SpeechFlags.Force), "TextToSpeechSpeak");
+                AssertCall(DecTalkImports.TextToSpeechSync(this.handle), "TextToSpeechSync");
 
                 var data = new byte[buffSize];
                 Marshal.Copy(buffer.Data, data, 0, buffSize);
@@ -78,7 +78,7 @@ public class DecTalk : ITextToSpeech {
             dv = DecTalkVoice.PAUL;
         }
         try {
-            AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, dv),"TextToSpeechSetSpeaker");
+            AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, dv), "TextToSpeechSetSpeaker");
         } catch (Exception e)
         {
             STLog.Log.Error(e, "Exception caught:");
@@ -93,7 +93,7 @@ public class DecTalk : ITextToSpeech {
     public void SetSpeed(float speed)
     {
         try {
-            AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, (uint)speed),"TextToSpeechSetRate");
+            AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, (uint)speed), "TextToSpeechSetRate");
         } catch (Exception e)
         {
             STLog.Log.Error(e, "Exception caught:");
@@ -108,19 +108,18 @@ public class DecTalk : ITextToSpeech {
         return handle != 0;
     }
 
-    public void Reset(bool reset) => AssertCall(DecTalkImports.TextToSpeechReset(this.handle, reset),"TextToSpeechReset");
+    public void Reset(bool reset) => AssertCall(DecTalkImports.TextToSpeechReset(this.handle, reset), "TextToSpeechReset");
 
-    // Unused currently
-    public bool IsBusy() {
-        uint[] identifiers = [DecTalkImports.StatusSpeaking];
-        uint[] statuses = [0];
-
+    public void GetStatus(out uint[] statuses)
+    {
+        statuses = [0, 0, 0];
+        DecTalkImports.StatusId[] identifiers = [
+            DecTalkImports.StatusId.INPUT_CHARACTER_COUNT, DecTalkImports.StatusId.STATUS_SPEAKING, DecTalkImports.StatusId.WAVE_OUT_DEVICE_ID
+        ];
         AssertCall(
-            DecTalkImports.TextToSpeechGetStatus(this.handle, identifiers, statuses, 1),
+            DecTalkImports.TextToSpeechGetStatus(this.handle, identifiers, statuses, 3),
             "TextToSpeechGetStatus"
         );
-
-        return statuses[0] != 0;
     }
 
     private static void AssertCall(uint value, string method) {
