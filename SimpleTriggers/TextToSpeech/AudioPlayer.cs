@@ -10,6 +10,34 @@ using SimpleTriggers.Logger;
 
 namespace SimpleTriggers.TextToSpeech;
 
+public sealed class AutoDisposeProvider : ISampleProvider
+{
+    private readonly ISampleProvider source;
+    private readonly IDisposable stream;
+    private bool isDisposed = false;
+
+    public AutoDisposeProvider(ISampleProvider source, IDisposable stream)
+    {
+        this.source = source;
+        this.stream = stream;
+    }
+
+    public int Read(float[] buffer, int offset, int count)
+    {
+        if(isDisposed) return 0;
+        var ret = source.Read(buffer, offset, count);
+        if(ret == 0)
+        {
+            stream.Dispose();
+            isDisposed = true;
+        }
+        return ret;
+    }
+
+    public WaveFormat WaveFormat => source.WaveFormat;
+}
+
+
 public enum AudioOutputType
 {
     WaveOut, // Can only support default audio device
@@ -46,7 +74,8 @@ public class AudioPlayer : IDisposable
                         var stream = new RawSourceWaveStream(packet, 0, packet.Length, conversionFormat);
                         var vmix = new VolumeSampleProvider(stream.ToSampleProvider()) { Volume = volume };
                         var smix = new WdlResamplingSampleProvider(vmix, mixer.WaveFormat.SampleRate);
-                        mixer.AddMixerInput(smix);
+                        var autoDispose = new AutoDisposeProvider(smix, stream);
+                        mixer.AddMixerInput(autoDispose);
                         if(!BlendStreams) await Task.Delay(stream.TotalTime); // prevents streams from overlapping
                     } catch (Exception e)
                     { STLog.Log.Error(e, "Exception caught:"); }

@@ -92,12 +92,21 @@ public class DecTalk : ITextToSpeech {
 
     public void Dispose()
     {
-        try {
-            Reset(true);
-            AssertCall(DecTalkImports.TextToSpeechShutdown(this.handle),"TextToSpeechShutdown");
-            DecTalkImports.Free();
-        } catch(Exception e) {
-            STLog.Log.Error(e, "DecTalk.Dispose(): Exception caught:");
+        cts.Cancel();
+        cts.Dispose();
+        if(this.handle != IntPtr.Zero)
+        {
+            // This is *purposefully* bad code. Until I can figure out why dectalk locks *randomly*,
+            // this will at the very least not block the main thread.
+            Task.Run(() => {
+                try {
+                    Reset(true);
+                    AssertCall(DecTalkImports.TextToSpeechShutdown(this.handle),"TextToSpeechShutdown");
+                    DecTalkImports.Free();
+                } catch(Exception e) {
+                    STLog.Log.Error(e, "DecTalk.Dispose(): Exception caught:");
+                }
+            });
         }
         GC.SuppressFinalize(this);
     }
@@ -114,6 +123,7 @@ public class DecTalk : ITextToSpeech {
                 syncText = syncText.Replace(",", "");
                 syncText = syncText.Replace("!", "");
                 syncText = syncText.Replace("?", "");
+                if(cts.IsCancellationRequested) throw new TaskCanceledException();
 
                 var buffSize = 1024 * 1024 * 2; // 2MB
                 var buffer = new DecTalkImports.TTS_BUFFER();
@@ -121,18 +131,53 @@ public class DecTalk : ITextToSpeech {
                 buffer.MaximumBufferLength = buffSize;
                 AssertCall(DecTalkImports.TextToSpeechAddBuffer(this.handle, &buffer), "TextToSpeechAddBuffer");
                 AssertCall(DecTalkImports.TextToSpeechSpeak(this.handle, syncText, DecTalkImports.SpeechFlags.Force), "TextToSpeechSpeak");
+                // If Sync hangs, this gets captured by the timeoutTask in ProcessSpeakQueue
+                // it ideally it shouldn't, but we have no idea how long it can hang for.
                 AssertCall(DecTalkImports.TextToSpeechSync(this.handle), "TextToSpeechSync");
+                if(cts.IsCancellationRequested) throw new TaskCanceledException();
 
                 var data = new byte[buffSize];
                 Marshal.Copy(buffer.Data, data, 0, buffSize);
-                audioPlayer.Enqueue(data);
-
+                audioPlayer.Enqueue(TrimAudioBuffer(data)); // trims just the end of the buffer
                 Marshal.FreeHGlobal(buffer.Data);
-                Reset(false);
+                Reset(true);
             }
         } catch (Exception e) {
             STLog.Log.Error(e, "DecTalk.Speak(): Exception caught:");
         }
+    }
+
+    private byte[] TrimAudioBuffer(byte[] buffer, float threshold = 0.01f)
+    {
+        // 16-bit PCM = 2 bytes per sample
+        var sampleCount = buffer.Length / 2;
+        var samples = new float[sampleCount];
+        
+        // converts the byte stream to float samples
+        for (var n = 0; n < sampleCount; n++)
+        {
+            // Combine two bytes into a 16-bit signed integer
+            short sample = BitConverter.ToInt16(buffer, n * 2);
+            // Normalize to a float between -1.0 and 1.0
+            samples[n] = sample / 32768f;
+        }
+
+        // Find the last sample above threshold
+        var end = samples.Length - 1;
+        for (var i = samples.Length - 1; i > 0; i--)
+        {
+            if (Math.Abs(samples[i]) > threshold)
+            {
+                end = i;
+                break;
+            }
+        }
+
+        // Extract the non-silent range back into a byte array
+        var trimmedBytes = new byte[(end - 1) * 2];
+        Buffer.BlockCopy(buffer, 0, trimmedBytes, 0, trimmedBytes.Length);
+        
+        return trimmedBytes;
     }
 
     public void SetVoice(string voice)

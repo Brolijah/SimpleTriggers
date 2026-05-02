@@ -171,6 +171,7 @@ public class STKokoro : ITextToSpeech
     public void Dispose()
     {
         cts.Cancel();
+        cts.Dispose();
         if(TryGetIPA(out var ipa))
         {
             ipa.Dispose();

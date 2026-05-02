@@ -42,6 +42,7 @@ public sealed class Plugin : IDalamudPlugin
     private AudioPlayer AudioPlayer { get; set; }
     private readonly ConcurrentQueue<string> SpeakQueue = new();
     private readonly Lock speakLock = new();
+    private CancellationTokenSource cts = new ();
     private bool ttsInProgress = false;
     
     public Plugin()
@@ -209,6 +210,12 @@ public sealed class Plugin : IDalamudPlugin
     
     internal void SpeakTTS(string message)
     {
+        if(cts.IsCancellationRequested)
+        {
+            cts.Dispose();
+            cts = new();
+        }
+
         if(message.Length > 0)
         {
             SpeakQueue.Enqueue(message);
@@ -221,22 +228,45 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    private void ProcessSpeakQueue()
+    private async void ProcessSpeakQueue()
     {
-        while(SpeakQueue.TryDequeue(out var msg))
+        while(SpeakQueue.TryDequeue(out var msg) && !cts.IsCancellationRequested)
         {
-            switch (Configuration.TTSProvider)
+            var speakTask = Task.Run(() =>
             {
-                case TextToSpeechType.Kokoro:
-                    TextToSpeech?.Speak(msg, Configuration.Kokoro.UseEspeak);
-                    break;
-                case TextToSpeechType.WindowsSystem:
-                case TextToSpeechType.DecTalk:
-                    TextToSpeech?.Speak(msg);
-                    break;
-                default:
-                    break;
+                switch (Configuration.TTSProvider)
+                {
+                    case TextToSpeechType.Kokoro:
+                        TextToSpeech?.Speak(msg, Configuration.Kokoro.UseEspeak);
+                        break;
+                    case TextToSpeechType.WindowsSystem:
+                    case TextToSpeechType.DecTalk:
+                        TextToSpeech?.Speak(msg);
+                        break;
+                    default:
+                        break;
+                }
+            });
+            var timeoutTask = Task.Delay(5000);
+            var finished = await Task.WhenAny(speakTask, timeoutTask);
+            if(finished == timeoutTask && !cts.IsCancellationRequested)
+            {
+                STLog.Log.Error("\n"+
+                    "  A speaker thread timed out trying to play a TTS message. If you're seeing this, then\n"+
+                    "  you should restart this plugin or your game. Restarting the plugin may mean your game\n"+
+                    "  will continue to function as normal, but there's probably a zombie thread running in\n"+
+                    "  the background that did not exit gracefully. Most likely DECtalk misbehaving.\n"+
+                    "  If you don't want to restart the plugin, swapping TTS providers may also work.");
+                StopAudioPlayback(true);
+                break;
             }
+        }
+
+        if(cts.IsCancellationRequested)
+        {
+            STLog.Log.Information("ProcessSpeakQueue(): Cancellation Requested!");
+            ttsInProgress = false;
+            return;
         }
 
         lock(speakLock)
@@ -250,7 +280,7 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    internal void StopAudioPlayback(bool clearQueue = false) { SpeakQueue.Clear(); AudioPlayer.StopPlayback(clearQueue); }
+    internal void StopAudioPlayback(bool clearQueue = false) { cts.Cancel(); SpeakQueue.Clear(); AudioPlayer.StopPlayback(clearQueue); }
     internal void SetAudioBackend(AudioOutputType type) => AudioPlayer.InitializeAudioBackend(type,null);
     internal void SetAudioOutputDevice(string id) => AudioPlayer.SetOutputDevice(id);
     internal void SetAudioBlending(bool blend) => AudioPlayer.BlendStreams = blend;
