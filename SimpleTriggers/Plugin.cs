@@ -252,11 +252,9 @@ public sealed class Plugin : IDalamudPlugin
             if(finished == timeoutTask && !cts.IsCancellationRequested)
             {
                 STLog.Log.Error("\n"+
-                    "  A speaker thread timed out trying to play a TTS message. If you're seeing this, then\n"+
-                    "  you should restart this plugin or your game. Restarting the plugin may mean your game\n"+
-                    "  will continue to function as normal, but there's probably a zombie thread running in\n"+
-                    "  the background that did not exit gracefully. Most likely DECtalk misbehaving.\n"+
-                    "  If you don't want to restart the plugin, swapping TTS providers may also work.");
+                    "  A speaker thread timed out trying to play a TTS message. If you're seeing this, then you\n"+
+                    "  should restart this plugin or swap TTS providers to \"reset\" the TextToSpeech instance.\n"+
+                    "  Most likely DECtalk misbehaving.");
                 StopAudioPlayback(true);
                 break;
             }
