@@ -32,7 +32,6 @@ public class DecTalkConfig
     public DecTalkConfig() {}
 }
 
-
 [Serializable]
 public class Configuration : IPluginConfiguration
 {

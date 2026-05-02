@@ -19,6 +19,6 @@ public static class DecTalkVoiceHelper
 {
 	public static string ToString(DecTalkVoice voice)
 	{
-		return Enum.GetName(voice) ?? "PAUL";
+		return Enum.GetName(voice) ?? $"Who? {{{voice}}}";
 	}
 }

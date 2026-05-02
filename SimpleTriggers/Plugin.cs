@@ -194,7 +194,7 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetVolume(Configuration.WinSpeech.Volume);
                 break;
             case TextToSpeechType.DecTalk:
-                TextToSpeech = new DecTalk(PluginInterface.AssemblyLocation.Directory?.FullName!, AudioPlayer);
+                TextToSpeech = new DecTalk(PluginInterface.GetPluginConfigDirectory(), AudioPlayer);
                 TextToSpeech.SetVoice(DecTalkVoiceHelper.ToString(Configuration.DecTalk.Voice));
                 TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
                 TextToSpeech.SetVolume(Configuration.DecTalk.Volume);

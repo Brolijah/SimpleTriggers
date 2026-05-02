@@ -19,7 +19,7 @@ public static class TTSProviders
             TextToSpeechType.None           => "None",
             TextToSpeechType.Kokoro         => "Kokoro",
             TextToSpeechType.WindowsSystem  => "Windows System",
-            TextToSpeechType.DecTalk        => "DECTalk",
+            TextToSpeechType.DecTalk        => "DECtalk",
             //TextToSpeechType.eSpeakNG       => "espeak-ng",
             //TextToSpeechType.flite          => "flite",
             _                               => ""

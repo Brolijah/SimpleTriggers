@@ -61,7 +61,7 @@ public class STKokoro : ITextToSpeech
                 {
                     // mismatch, flag for download
                     File.Delete(path);
-                    STLog.Log.Information("KokoroTTS model mismatched hash, redownloading");
+                    STLog.Log.Warning("KokoroTTS model mismatched hash, redownloading");
                     download = true;
                 } else { STLog.Log.Information("KokoroTTS model already on disk. Using existing file."); }
             } else { download = true; }
