@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using FFXIVClientStructs;
 
 namespace SimpleTriggers.TextToSpeech;
 
@@ -23,6 +22,9 @@ public unsafe partial class DecTalkImports {
         string dictionary
     );
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void CallbackDelegate(long param1, long param2, uint cbParameter, uint uiMsg);
+
     [Flags]
     public enum SpeechFlags : uint {
         Normal = 0,
@@ -39,7 +41,7 @@ public unsafe partial class DecTalkImports {
     public static partial uint TextToSpeechSetSpeaker(nint handle, DecTalkVoice speaker);
 
     [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechOpenInMemory(nint handle, WaveFormat dwFormat);
+    public static partial uint TextToSpeechOpenInMemory(nint handle, DtWaveFormat dwFormat);
 
     [LibraryImport(LibraryName)]
     public static partial uint TextToSpeechCloseInMemory(nint handle);
@@ -56,16 +58,9 @@ public unsafe partial class DecTalkImports {
     [LibraryImport(LibraryName)]
     public static partial uint TextToSpeechShutdown(nint handle);
 
-    public enum StatusId : uint
-    {
-        INPUT_CHARACTER_COUNT = 0,
-        STATUS_SPEAKING = 1,
-        WAVE_OUT_DEVICE_ID = 2,
-    }
-
     [LibraryImport(LibraryName)]
     public static partial uint TextToSpeechGetStatus(
-        nint handle, [In] StatusId[] identifiers, [Out] uint[] statuses, uint numStatuses);
+        nint handle, [In] DtStatusId[] identifiers, [Out] uint[] statuses, uint numStatuses);
 
     // yes, `reset` is a four byte bool here https://dectalk.github.io/dectalk/idh_sdk_2_texttospeechreset.htm
     [LibraryImport(LibraryName)]
@@ -105,13 +100,6 @@ public unsafe partial class DecTalkImports {
     public static bool IsLoaded(string dllPath)
     {
         return GetModuleHandle(dllPath) != IntPtr.Zero;
-    }
-
-    public enum WaveFormat : uint {
-        WAVE_INVALIDFORMAT  =  0x00000000,       /* invalid format */
-        WAVE_FORMAT_1M08    =  0x00000001,       /* 11.025 kHz, Mono,   8-bit */
-        WAVE_FORMAT_1M16    =  0x00000004,       /* 11.025 kHz, Mono,   16-bit */
-        WAVE_FORMAT_08M08   =  0x00001000,       /* 8      kHz, Mono,   8-bit */
     }
 
     [StructLayout(LayoutKind.Sequential)]
