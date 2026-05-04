@@ -113,10 +113,11 @@ public class DecTalk : ITextToSpeech {
         GC.SuppressFinalize(this);
     }
 
+    // TODO: PUT IN A LOCK GUARD TO PREVENT FURTHER THREADS FROM DEADLOCKING
     public void Speak(string text, bool extra)
     {
         if(!IsInitialized()) return;
-        //STLog.Log.Warning("Entering DetTalk.Speak()");
+        STLog.Log.Warning("Entering DetTalk.Speak()");
         byte[] data = [];
         string[] punctuation = [".", ",", "!", "?", ";", ": "];
         var clauses = text.Split(punctuation, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -130,11 +131,14 @@ public class DecTalk : ITextToSpeech {
                     var buffer = new DecTalkImports.TTS_BUFFER();
                     buffer.Data = Marshal.AllocHGlobal(buffSize);
                     buffer.MaximumBufferLength = buffSize;
-                    AssertCall(DecTalkImports.TextToSpeechAddBuffer(this.handle, &buffer), "TextToSpeechAddBuffer", cts.Token);
-                    AssertCall(DecTalkImports.TextToSpeechSpeak(this.handle, clause, DecTalkImports.SpeechFlags.Force), "TextToSpeechSpeak", cts.Token);
+                    cts.Token.ThrowIfCancellationRequested();
+                    AddBuffer(&buffer);
+                    SpeakInternal(clause, DtSpeechFlags.Force);
+                    cts.Token.ThrowIfCancellationRequested();
                     // If Sync hangs, this gets captured by the timeoutTask in ProcessSpeakQueue
-                    // it ideally shouldn't, but we have no idea how long it can hang for.
-                    AssertCall(DecTalkImports.TextToSpeechSync(this.handle), "TextToSpeechSync", cts.Token);
+                    // Sync() waits MAX 30 minutes. Still researching how to prevent this.
+                    Sync();
+                    STLog.Log.Warning("Sync() Completed");
                     cts.Token.ThrowIfCancellationRequested();
 
                     var chunk = new byte[buffSize];
@@ -145,7 +149,7 @@ public class DecTalk : ITextToSpeech {
                 }
             }
             cts.Token.ThrowIfCancellationRequested();
-            audioPlayer.Enqueue(data); // trims just the end of the buffer
+            audioPlayer.Enqueue(data);
         } catch (Exception e) {
             STLog.Log.Error(e, "DecTalk.Speak(): Exception caught:");
         }
@@ -242,59 +246,6 @@ public class DecTalk : ITextToSpeech {
         return ret;
     }
 
-    private bool TryInitLibrary()
-    {
-        if(this.handle == IntPtr.Zero)
-        {
-            try {
-                DecTalkImports.SetupResolver(Path.Join(configPath, "dectalk/dtalk_us.dll"));
-                var dictionaryPath = Path.Join(configPath, "dectalk/dtalk_us.dic");
-                AssertCall(
-                    DecTalkImports.TextToSpeechStartupExFonix(ref this.handle, -1, 0, Marshal.GetFunctionPointerForDelegate(callbackRef), 0, dictionaryPath),
-                    "TextToSpeechStartup");
-                AssertCall(
-                    DecTalkImports.TextToSpeechOpenInMemory(this.handle, DtWaveFormat.WAVE_FORMAT_1M16),
-                    "TextToSpeechOpenInMemory");
-                // workaround for a race condition where these may be set before the library is loaded
-                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, this.voice), "TextToSpeechSetSpeaker");
-                AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
-            } catch (Exception e) {
-                STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
-                this.handle = IntPtr.Zero;
-            }
-        }
-        return this.handle != IntPtr.Zero;
-    }
-
-    private void Callback(long param1, long param2, uint cbParameter, uint uiMsg)
-    {
-        /*
-        var msgFlag = (DtCallbackId)(uiMsg&0xF); // GIBBERISH?????
-        STLog.Log.Warning(
-            $"DecTalk.Callback():\n"+
-            $"  param1  = {(DtError)param1}\n"+
-            $"  cbParam = {cbParameter}\n"+
-            $"  uiMsg   = {msgFlag}");
-        
-        // If something wrong happens here it's prboably dunzo
-        /* try { unsafe {
-            //if(msgFlag == DtCallbackId.MGS_BUFFER)
-            //{
-                var buffer = (DecTalkImports.TTS_BUFFER*)param2;
-                STLog.Log.Warning(
-                    $"DecTalk.Callback() : MSG_BUFFER\n"+
-                    $"  buffer->BufferLength           = {buffer->BufferLength}\n"+
-                    $"  buffer->MaximumBufferLength    = {buffer->MaximumBufferLength}\n"+
-                    $"  buffer->NumberOfPhonemeChanges = {buffer->NumberOfPhonemeChanges}\n"+
-                    $"  buffer->NumberOfIndexMarks     = {buffer->NumberOfIndexMarks}");
-                //Reset(false);
-            //}
-        }} catch (Exception e)
-        {
-            STLog.Log.Error(e, "Exception caught:");
-        } */
-    }
-
     public void Reset(bool reset)
     {
         if(!IsInitialized()) return;
@@ -317,8 +268,84 @@ public class DecTalk : ITextToSpeech {
         );
     }
 
-    private static void AssertCall(uint value, string method, CancellationToken? token = null) {
-        token?.ThrowIfCancellationRequested();
+    private void SpeakInternal(string text, DtSpeechFlags flags)
+    {
+        AssertCall(DecTalkImports.TextToSpeechSpeak(this.handle, text, flags), "TextToSpeechSpeak");
+    }
+
+    private void Sync()
+    {
+        AssertCall(DecTalkImports.TextToSpeechSync(this.handle), "TextToSpeechSync");
+    }
+
+    private unsafe void AddBuffer(DecTalkImports.TTS_BUFFER* buffer)
+    {
+        AssertCall(DecTalkImports.TextToSpeechAddBuffer(this.handle, buffer), "TextToSpeechAddBuffer");
+    }
+
+    private static void AssertCall(uint value, string method) {
         if (value != 0) throw new Exception($"Calling {method} returned error code {(DtError)value}");
+    }
+
+    private bool TryInitLibrary()
+    {
+        if(this.handle == IntPtr.Zero)
+        {
+            try {
+                DecTalkImports.SetupResolver(Path.Join(configPath, "dectalk/dtalk_us.dll"));
+                var dictionaryPath = Path.Join(configPath, "dectalk/dtalk_us.dic");
+                AssertCall(
+                    DecTalkImports.TextToSpeechStartupExFonix(ref this.handle, -1, 0, IntPtr.Zero, 0, dictionaryPath),
+                    "TextToSpeechStartup");
+                AssertCall(
+                    DecTalkImports.TextToSpeechOpenInMemory(this.handle, DtWaveFormat.WAVE_FORMAT_1M16),
+                    "TextToSpeechOpenInMemory");
+                // workaround for a race condition where these may be set before the library is loaded
+                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, this.voice), "TextToSpeechSetSpeaker");
+                AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
+            } catch (Exception e) {
+                STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
+                this.handle = IntPtr.Zero;
+            }
+        }
+        return this.handle != IntPtr.Zero;
+    }
+
+    /* Note from the DECtalk user handbook
+        Callback routines should not call TextToSpeech…() functions. If a callback
+        routine does call TextToSpeech…() functions, a crash may occur in the
+        application calling DECtalk Software. 
+    */
+    private void Callback(long param1, long param2, long cbParameter, uint uiMsg)
+    {
+        var msgFlag = (DtCallbackId)(uiMsg&0xF); // first 4 bits
+        STLog.Log.Debug(
+            $"DecTalk.Callback():\n"+
+            $"  param1  = {(DtError)param1}\n"+
+            $"  cbParam = {cbParameter}\n"+
+            $"  uiMsg   = {uiMsg}\n"+
+            $"    msgFlag = {msgFlag}");
+        
+        // If something wrong happens here it's prboably dunzo
+        unsafe {
+            if(msgFlag == DtCallbackId.MGS_BUFFER)
+            {
+                Task.Delay(100); // give the engine a moment to fill the buffer
+                var buffer = (DecTalkImports.TTS_BUFFER*)param2;
+                STLog.Log.Debug(
+                    $"DecTalk.Callback(): MSG_BUFFER\n"+
+                    $"  buffer->BufferLength           = {buffer->BufferLength}\n"+
+                    $"  buffer->MaximumBufferLength    = {buffer->MaximumBufferLength}\n"+
+                    $"  buffer->NumberOfPhonemeChanges = {buffer->NumberOfPhonemeChanges}\n"+
+                    $"  buffer->NumberOfIndexMarks     = {buffer->NumberOfIndexMarks}");
+                // If you want to rely on the callback to process audio data, you can do so here
+                // I'm using the blocking synchronous approach so we won't be doing that.
+                // For Me: If I do use this here, remember AudioPlayer.BlendStreams MUST be false
+                /*var data = new byte[buffer->MaximumBufferLength];
+                Marshal.Copy(buffer->Data, data, 0, data.Length);
+                audioPlayer.Enqueue(TrimAudioBuffer(data));
+                Marshal.FreeHGlobal(buffer->Data);*/
+            }
+        }
     }
 }

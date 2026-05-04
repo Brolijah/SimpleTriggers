@@ -23,16 +23,10 @@ public unsafe partial class DecTalkImports {
     );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void CallbackDelegate(long param1, long param2, uint cbParameter, uint uiMsg);
-
-    [Flags]
-    public enum SpeechFlags : uint {
-        Normal = 0,
-        Force = 1
-    }
+    public delegate void CallbackDelegate(long param1, long param2, long cbParameter, uint uiMsg);
     
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    public static partial uint TextToSpeechSpeak(nint handle, string text, SpeechFlags flags);
+    public static partial uint TextToSpeechSpeak(nint handle, string text, DtSpeechFlags flags);
 
     [LibraryImport(LibraryName)]
     public static partial uint TextToSpeechSync(nint handle);
