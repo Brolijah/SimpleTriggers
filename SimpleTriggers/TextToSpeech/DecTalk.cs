@@ -15,7 +15,6 @@ public class DecTalk : ITextToSpeech {
     private readonly Task<bool> libraryTask;
     private readonly AudioPlayer audioPlayer;
     private readonly CancellationTokenSource cts = new();
-    private readonly DecTalkImports.CallbackDelegate callbackRef;
     private readonly string configPath;
     private const string ZipUrl = "https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip";
     // https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip
@@ -33,7 +32,6 @@ public class DecTalk : ITextToSpeech {
         audioPlayer = player;
         audioPlayer.SetSourceWaveFormat(11025, 1);
         libraryTask = LoadLibraryAsync(configPath);
-        callbackRef = Callback;
     }
 
     private async Task<bool> LoadLibraryAsync(string configPath)
@@ -101,6 +99,7 @@ public class DecTalk : ITextToSpeech {
             // this will at the very least not block the main thread.
             Task.Run(() => {
                 try {
+                    //DecTalkImports.TextToSpeechCloseInMemory(this.handle);
                     DecTalkImports.TextToSpeechShutdown(this.handle); // don't care about the return of this
                     DecTalkImports.Free();
                 } catch(Exception e) {
@@ -293,17 +292,20 @@ public class DecTalk : ITextToSpeech {
         if(this.handle == IntPtr.Zero)
         {
             try {
+                var temp = IntPtr.Zero;
                 DecTalkImports.SetupResolver(Path.Join(configPath, "dectalk/dtalk_us.dll"));
                 var dictionaryPath = Path.Join(configPath, "dectalk/dtalk_us.dic");
                 AssertCall(
-                    DecTalkImports.TextToSpeechStartupExFonix(ref this.handle, -1, 0, IntPtr.Zero, 0, dictionaryPath),
-                    "TextToSpeechStartup");
+                    DecTalkImports.TextToSpeechStartupExFonix(ref temp, -1,
+                        DtDeviceOptions.DO_NOT_USE_AUDIO_DEVICE, null, 0, dictionaryPath),
+                        "TextToSpeechStartup");
                 AssertCall(
-                    DecTalkImports.TextToSpeechOpenInMemory(this.handle, DtWaveFormat.WAVE_FORMAT_1M16),
+                    DecTalkImports.TextToSpeechOpenInMemory(temp, DtWaveFormat.WAVE_FORMAT_1M16),
                     "TextToSpeechOpenInMemory");
                 // workaround for a race condition where these may be set before the library is loaded
-                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, this.voice), "TextToSpeechSetSpeaker");
-                AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
+                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(temp, this.voice), "TextToSpeechSetSpeaker");
+                AssertCall(DecTalkImports.TextToSpeechSetRate(temp, this.speed), "TextToSpeechSetRate");
+                this.handle = temp;
             } catch (Exception e) {
                 STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
                 this.handle = IntPtr.Zero;
@@ -317,12 +319,12 @@ public class DecTalk : ITextToSpeech {
         routine does call TextToSpeech…() functions, a crash may occur in the
         application calling DECtalk Software. 
     */
-    private void Callback(long param1, long param2, uint dtInstance, uint uiMsg)
+    private void Callback(long param1, long param2, uint cbParam, uint uiMsg)
     {
         STLog.Log.Debug(
             $"DecTalk.Callback():\n"+
             $"  param1  = {(DtError)param1}\n"+
-            $"  dtInst  = {dtInstance}\n"+
+            $"  cbParam = {cbParam}\n"+
             $"  uiMsg   = {uiMsg}\n"); // GIBBERISH?
         
         // If something wrong happens here it's prboably dunzo
@@ -335,7 +337,7 @@ public class DecTalk : ITextToSpeech {
                 // If you want to rely on the callback to process audio data, you can do so here
                 // I'm using the blocking synchronous approach so we won't be doing that.
                 // For Me: If I do use this here, remember AudioPlayer.BlendStreams MUST be false
-                /*var data = new byte[buffer->MaximumBufferLength];
+                /*var data = new byte[buffer->BufferLength];
                 Marshal.Copy(buffer->Data, data, 0, data.Length);
                 audioPlayer.Enqueue(TrimAudioBuffer(data));
                 Marshal.FreeHGlobal(buffer->Data);*/

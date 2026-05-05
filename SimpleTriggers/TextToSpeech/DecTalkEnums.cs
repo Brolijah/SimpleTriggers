@@ -31,6 +31,15 @@ public enum DtCallbackId : uint
 
 }
 [Flags]
+public enum DtDeviceOptions : uint
+{
+	OWN_AUDIO_DEVICE        = 0x00000001,
+	REPORT_OPEN_ERROR       = 0x00000002,
+	USE_SAPI5_AUDIO_DEVICE  = 0x40000000,
+	DO_NOT_USE_AUDIO_DEVICE = 0x80000000
+}
+
+[Flags]
 public enum DtSpeechFlags : uint {
 	Normal = 0,
 	Force = 1

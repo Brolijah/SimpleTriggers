@@ -16,8 +16,8 @@ public unsafe partial class DecTalkImports {
     public static partial uint TextToSpeechStartupExFonix(
         ref nint handle,
         int deviceNumber,
-        uint deviceOptions,
-        nint callbackRoutine,
+        DtDeviceOptions deviceOptions,
+        CallbackDelegate? callbackRoutine,
         int instanceParameter,
         string dictionary
     );
@@ -86,7 +86,6 @@ public unsafe partial class DecTalkImports {
     {
         NativeLibrary.Free(pHandle);
         pHandle = IntPtr.Zero;
-        GC.Collect();
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
