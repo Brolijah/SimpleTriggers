@@ -101,8 +101,7 @@ public class DecTalk : ITextToSpeech {
             // this will at the very least not block the main thread.
             Task.Run(() => {
                 try {
-                    Reset(true);
-                    AssertCall(DecTalkImports.TextToSpeechShutdown(this.handle),"TextToSpeechShutdown");
+                    DecTalkImports.TextToSpeechShutdown(this.handle); // don't care about the return of this
                     DecTalkImports.Free();
                 } catch(Exception e) {
                     STLog.Log.Error(e, "DecTalk.Dispose(): Exception caught:");
@@ -127,28 +126,30 @@ public class DecTalk : ITextToSpeech {
                 cts.Token.ThrowIfCancellationRequested();
                 // If something bad happens here... pray
                 unsafe {
-                    var buffSize = 1024 * 1024; // 1 MB ~45 seconds?
+                    var buffSize = 1024 * 1024 * 2; // 2 MB ~1m30s?
                     var buffer = new DecTalkImports.TTS_BUFFER();
-                    buffer.Data = Marshal.AllocHGlobal(buffSize);
-                    buffer.MaximumBufferLength = buffSize;
+                    buffer.Data = Marshal.AllocHGlobal(buffSize); // TODO: can create a memory leak if we throw
+                    buffer.MaximumBufferLength = (uint)buffSize;
                     cts.Token.ThrowIfCancellationRequested();
+
                     AddBuffer(&buffer);
                     SpeakInternal(clause, DtSpeechFlags.Force);
                     cts.Token.ThrowIfCancellationRequested();
+
                     // If Sync hangs, this gets captured by the timeoutTask in ProcessSpeakQueue
                     // Sync() waits MAX 30 minutes. Still researching how to prevent this.
                     Sync();
                     STLog.Log.Warning("Sync() Completed");
                     cts.Token.ThrowIfCancellationRequested();
 
-                    var chunk = new byte[buffSize];
-                    Marshal.Copy(buffer.Data, chunk, 0, buffSize);
+                    var chunk = new byte[buffer.BufferLength];
+                    Marshal.Copy(buffer.Data, chunk, 0, (int)buffer.BufferLength);
                     data = [.. data, .. TrimAudioBuffer(chunk)];
                     Marshal.FreeHGlobal(buffer.Data);
-                    Reset(true);
                 }
             }
             cts.Token.ThrowIfCancellationRequested();
+            Reset(true);
             audioPlayer.Enqueue(data);
         } catch (Exception e) {
             STLog.Log.Error(e, "DecTalk.Speak(): Exception caught:");
@@ -316,28 +317,21 @@ public class DecTalk : ITextToSpeech {
         routine does call TextToSpeech…() functions, a crash may occur in the
         application calling DECtalk Software. 
     */
-    private void Callback(long param1, long param2, long cbParameter, uint uiMsg)
+    private void Callback(long param1, long param2, uint dtInstance, uint uiMsg)
     {
-        var msgFlag = (DtCallbackId)(uiMsg&0xF); // first 4 bits
         STLog.Log.Debug(
             $"DecTalk.Callback():\n"+
             $"  param1  = {(DtError)param1}\n"+
-            $"  cbParam = {cbParameter}\n"+
-            $"  uiMsg   = {uiMsg}\n"+
-            $"    msgFlag = {msgFlag}");
+            $"  dtInst  = {dtInstance}\n"+
+            $"  uiMsg   = {uiMsg}\n"); // GIBBERISH?
         
         // If something wrong happens here it's prboably dunzo
         unsafe {
-            if(msgFlag == DtCallbackId.MGS_BUFFER)
+            if(uiMsg == (int)DtCallbackId.MSG_BUFFER)
             {
-                Task.Delay(100); // give the engine a moment to fill the buffer
-                var buffer = (DecTalkImports.TTS_BUFFER*)param2;
-                STLog.Log.Debug(
-                    $"DecTalk.Callback(): MSG_BUFFER\n"+
-                    $"  buffer->BufferLength           = {buffer->BufferLength}\n"+
-                    $"  buffer->MaximumBufferLength    = {buffer->MaximumBufferLength}\n"+
-                    $"  buffer->NumberOfPhonemeChanges = {buffer->NumberOfPhonemeChanges}\n"+
-                    $"  buffer->NumberOfIndexMarks     = {buffer->NumberOfIndexMarks}");
+                //Task.Delay(100); // give the engine a moment to fill the buffer
+                //var buffer = (DecTalkImports.TTS_BUFFER*)param2;
+
                 // If you want to rely on the callback to process audio data, you can do so here
                 // I'm using the blocking synchronous approach so we won't be doing that.
                 // For Me: If I do use this here, remember AudioPlayer.BlendStreams MUST be false

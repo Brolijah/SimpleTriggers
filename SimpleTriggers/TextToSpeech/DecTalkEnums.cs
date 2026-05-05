@@ -24,7 +24,7 @@ public enum DtError : uint
 
 public enum DtCallbackId : uint
 {
-	MGS_BUFFER = 9,
+	MSG_BUFFER = 9,
 	MSG_INDEX_MARK = 1,
 	MSG_STATUS = 2,
 	MSG_VISUAL = 3

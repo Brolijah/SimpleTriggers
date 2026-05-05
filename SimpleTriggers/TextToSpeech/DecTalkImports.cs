@@ -23,7 +23,7 @@ public unsafe partial class DecTalkImports {
     );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void CallbackDelegate(long param1, long param2, long cbParameter, uint uiMsg);
+    public delegate void CallbackDelegate(long param1, long param2, uint cbParameter, uint uiMsg);
     
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
     public static partial uint TextToSpeechSpeak(nint handle, string text, DtSpeechFlags flags);
@@ -119,14 +119,14 @@ public unsafe partial class DecTalkImports {
         public TTS_PHONEME* PhonemeArray;
         public TTS_INDEX* IndexArray;
 
-        public nint MaximumBufferLength;
-        public nint MaximumNumberOfPhonemeChanges;
-        public nint MaximumNumberOfIndexMarks;
+        public uint MaximumBufferLength;
+        public uint MaximumNumberOfPhonemeChanges;
+        public uint MaximumNumberOfIndexMarks;
 
-        public nint BufferLength;
-        public nint NumberOfPhonemeChanges;
-        public nint NumberOfIndexMarks;
+        public uint BufferLength;
+        public uint NumberOfPhonemeChanges;
+        public uint NumberOfIndexMarks;
 
-        public nint Reserved;
+        public uint Reserved;
     }
 }
