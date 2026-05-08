@@ -1,4 +1,6 @@
 ﻿using Dalamud.Game.Command;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
@@ -205,7 +207,29 @@ public sealed class Plugin : IDalamudPlugin
 
     internal void PrintChatMsg(string message)
     {
-        ChatGui.Print(message, $"{Name}", 529);
+        ChatGui.Print(message, Name, 529);
+    }
+
+    private void PrintResetMsg()
+    {
+        var ssb = new SeStringBuilder();
+        ChatGui.RemoveChatLinkHandler(34);
+        DalamudLinkPayload payload = ChatGui.AddChatLinkHandler(34,
+        (i, m) =>
+        {
+            SwapTTSBackend();
+            PrintChatMsg($"Reloaded TTS backend {TTSProviders.ToName(Configuration.TTSProvider)}");
+            ChatGui.RemoveChatLinkHandler(34);
+        });
+
+        ssb.AddText("A speaker thread timed out trying to play a TTS message. If you're seeing this, then you "+
+                    "should reload the TTS backend. (Most likely DECtalk misbehaving.)\n");
+        ssb.AddUiForeground(32);
+        ssb.Add(payload);
+        ssb.AddText("[Click to Reload TTS]");
+        ssb.Add(RawPayload.LinkTerminator);
+        ssb.AddUiForegroundOff();
+        ChatGui.PrintError(ssb.BuiltString, Name, 529);
     }
     
     internal void SpeakTTS(string message)
@@ -256,6 +280,7 @@ public sealed class Plugin : IDalamudPlugin
                     "  should restart this plugin or swap TTS providers to \"reset\" the TextToSpeech instance.\n"+
                     "  Most likely DECtalk misbehaving.");
                 StopAudioPlayback(true);
+                PrintResetMsg();
                 break;
             }
         }

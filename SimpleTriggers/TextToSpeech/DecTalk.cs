@@ -93,29 +93,24 @@ public class DecTalk : ITextToSpeech {
     public void Dispose()
     {
         cts.Cancel();
+        cts.Dispose();
         if(this.handle != IntPtr.Zero)
         {
             // This is *purposefully* bad code. Until I can figure out why dectalk locks *randomly*,
             // this will at the very least not block the main thread.
-            Task.Run(() => {
-                try {
-                    //DecTalkImports.TextToSpeechCloseInMemory(this.handle);
-                    DecTalkImports.TextToSpeechShutdown(this.handle); // don't care about the return of this
-                    DecTalkImports.Free();
-                } catch(Exception e) {
-                    STLog.Log.Error(e, "DecTalk.Dispose(): Exception caught:");
-                }
+            Task.Run(() =>
+            {
+                DecTalkImports.TextToSpeechShutdown(this.handle); // don't care about the return of this
+                DecTalkImports.Free();
             });
         }
-        cts.Dispose();
         GC.SuppressFinalize(this);
     }
 
-    // TODO: PUT IN A LOCK GUARD TO PREVENT FURTHER THREADS FROM DEADLOCKING
     public void Speak(string text, bool extra)
     {
         if(!IsInitialized()) return;
-        STLog.Log.Warning("Entering DetTalk.Speak()");
+
         byte[] data = [];
         string[] punctuation = [".", ",", "!", "?", ";", ": "];
         var clauses = text.Split(punctuation, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -138,7 +133,6 @@ public class DecTalk : ITextToSpeech {
                     // If Sync hangs, this gets captured by the timeoutTask in ProcessSpeakQueue
                     // Sync() waits MAX 30 minutes. Still researching how to prevent this.
                     Sync();
-                    STLog.Log.Warning("Sync() Completed");
                     cts.Token.ThrowIfCancellationRequested();
 
                     var chunk = new byte[buffer.BufferLength];
@@ -246,26 +240,9 @@ public class DecTalk : ITextToSpeech {
         return ret;
     }
 
-    public void Reset(bool reset)
+    private void Reset(bool reset)
     {
-        if(!IsInitialized()) return;
         AssertCall(DecTalkImports.TextToSpeechReset(this.handle, reset), "TextToSpeechReset");
-    }
-
-    public void GetStatus(out uint[] statuses)
-    {
-        statuses = [0, 0, 0];
-        if(!IsInitialized()) return;
-
-        DtStatusId[] identifiers = [
-            DtStatusId.INPUT_CHARACTER_COUNT,
-            DtStatusId.STATUS_SPEAKING,
-            DtStatusId.WAVE_OUT_DEVICE_ID
-        ];
-        AssertCall(
-            DecTalkImports.TextToSpeechGetStatus(this.handle, identifiers, statuses, 3),
-            "TextToSpeechGetStatus"
-        );
     }
 
     private void SpeakInternal(string text, DtSpeechFlags flags)

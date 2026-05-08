@@ -28,8 +28,8 @@ public enum DtCallbackId : uint
 	MSG_INDEX_MARK = 1,
 	MSG_STATUS = 2,
 	MSG_VISUAL = 3
-
 }
+
 [Flags]
 public enum DtDeviceOptions : uint
 {

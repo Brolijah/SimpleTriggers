@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace SimpleTriggers.TextToSpeech;
 
-// https://github.com/dectalk/dectalk/blob/32efa30ef2e216b3ad091c41abf5b502498a19aa/src/dapi/src/api/ttsapi.h
+// https://github.com/dectalk/dectalk/blob/develop/src/dapi/src/api/ttsapi.h
 public unsafe partial class DecTalkImports {
     private static bool isResolverRegistered = false;
     private static nint pHandle;
