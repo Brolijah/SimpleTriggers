@@ -27,7 +27,8 @@ public class STKokoro : ITextToSpeech
     private KokoroVoice kv;
     public STKokoro(string binPath, string configPath, AudioPlayer player)
     {
-        this.audioPlayer = player;
+        audioPlayer = player;
+        audioPlayer.SetSourceWaveFormat(24000, 1);
         this.configPath = configPath;
         modelTask = LoadModelAsync();
         ipaTask = LoadDictionaryAsync(Path.Join(binPath, "en_US.txt"));     
@@ -60,7 +61,7 @@ public class STKokoro : ITextToSpeech
                 {
                     // mismatch, flag for download
                     File.Delete(path);
-                    STLog.Log.Information("KokoroTTS model mismatched hash, redownloading");
+                    STLog.Log.Warning("KokoroTTS model mismatched hash, redownloading");
                     download = true;
                 } else { STLog.Log.Information("KokoroTTS model already on disk. Using existing file."); }
             } else { download = true; }
@@ -170,6 +171,7 @@ public class STKokoro : ITextToSpeech
     public void Dispose()
     {
         cts.Cancel();
+        cts.Dispose();
         if(TryGetIPA(out var ipa))
         {
             ipa.Dispose();

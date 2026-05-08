@@ -10,6 +10,34 @@ using SimpleTriggers.Logger;
 
 namespace SimpleTriggers.TextToSpeech;
 
+public sealed class AutoDisposeProvider : ISampleProvider
+{
+    private readonly ISampleProvider source;
+    private readonly IDisposable stream;
+    private bool isDisposed = false;
+
+    public AutoDisposeProvider(ISampleProvider source, IDisposable stream)
+    {
+        this.source = source;
+        this.stream = stream;
+    }
+
+    public int Read(float[] buffer, int offset, int count)
+    {
+        if(isDisposed) return 0;
+        var ret = source.Read(buffer, offset, count);
+        if(ret == 0)
+        {
+            stream.Dispose();
+            isDisposed = true;
+        }
+        return ret;
+    }
+
+    public WaveFormat WaveFormat => source.WaveFormat;
+}
+
+
 public enum AudioOutputType
 {
     WaveOut, // Can only support default audio device
@@ -23,6 +51,7 @@ public class AudioPlayer : IDisposable
     private string deviceGuid;
     private AudioOutputType audioBackend;
     private IWavePlayer? wavePlayer;
+    private WaveFormat conversionFormat = new (24000, 16, 1);
     private readonly MixingSampleProvider mixer;
     public volatile bool BlendStreams = true; // when true, allows audio streams to be blended together (or "overlap")
     private volatile float volume = 1.0f;
@@ -42,10 +71,11 @@ public class AudioPlayer : IDisposable
                 while(!hasExited && queue.TryDequeue(out var packet))
                 {
                     try {
-                        var stream = new RawSourceWaveStream(packet, 0, packet.Length, new (24000, 16, 1));
+                        var stream = new RawSourceWaveStream(packet, 0, packet.Length, conversionFormat);
                         var vmix = new VolumeSampleProvider(stream.ToSampleProvider()) { Volume = volume };
                         var smix = new WdlResamplingSampleProvider(vmix, mixer.WaveFormat.SampleRate);
-                        mixer.AddMixerInput(smix);
+                        var autoDispose = new AutoDisposeProvider(smix, stream);
+                        mixer.AddMixerInput(autoDispose);
                         if(!BlendStreams) await Task.Delay(stream.TotalTime); // prevents streams from overlapping
                     } catch (Exception e)
                     { STLog.Log.Error(e, "Exception caught:"); }
@@ -117,6 +147,11 @@ public class AudioPlayer : IDisposable
     public void SetVolume(float volume)
     {
         this.volume = volume/100f;
+    }
+
+    public void SetSourceWaveFormat(int sampleRate, int channels, int bitDepth = 16)
+    {
+        conversionFormat = new WaveFormat(sampleRate, bitDepth, channels);
     }
 
     public void Dispose()

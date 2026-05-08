@@ -1,4 +1,6 @@
 ﻿using Dalamud.Game.Command;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
@@ -42,6 +44,7 @@ public sealed class Plugin : IDalamudPlugin
     private AudioPlayer AudioPlayer { get; set; }
     private readonly ConcurrentQueue<string> SpeakQueue = new();
     private readonly Lock speakLock = new();
+    private CancellationTokenSource cts = new ();
     private bool ttsInProgress = false;
     
     public Plugin()
@@ -193,16 +196,50 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetSpeed(Configuration.WinSpeech.Speed);
                 TextToSpeech.SetVolume(Configuration.WinSpeech.Volume);
                 break;
+            case TextToSpeechType.DecTalk:
+                TextToSpeech = new DecTalk(PluginInterface.GetPluginConfigDirectory(), AudioPlayer);
+                TextToSpeech.SetVoice(DecTalkVoiceHelper.ToString(Configuration.DecTalk.Voice));
+                TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
+                TextToSpeech.SetVolume(Configuration.DecTalk.Volume);
+                break;
         }
     }
 
     internal void PrintChatMsg(string message)
     {
-        ChatGui.Print(message, $"{Name}", 529);
+        ChatGui.Print(message, Name, 529);
+    }
+
+    private void PrintResetMsg()
+    {
+        var ssb = new SeStringBuilder();
+        ChatGui.RemoveChatLinkHandler(34);
+        DalamudLinkPayload payload = ChatGui.AddChatLinkHandler(34,
+        (i, m) =>
+        {
+            SwapTTSBackend();
+            PrintChatMsg($"Reloaded {TTSProviders.ToName(Configuration.TTSProvider)}");
+            ChatGui.RemoveChatLinkHandler(34);
+        });
+
+        ssb.AddText("A speaker thread timed out trying to play a TTS message. If you're seeing this, then you "+
+                    "should reload the TTS backend. (Most likely DECtalk misbehaving.)\n");
+        ssb.AddUiForeground(32);
+        ssb.Add(payload);
+        ssb.AddText("[Click to Reload TTS]");
+        ssb.Add(RawPayload.LinkTerminator);
+        ssb.AddUiForegroundOff();
+        ChatGui.PrintError(ssb.BuiltString, Name, 529);
     }
     
     internal void SpeakTTS(string message)
     {
+        if(cts.IsCancellationRequested)
+        {
+            cts.Dispose();
+            cts = new();
+        }
+
         if(message.Length > 0)
         {
             SpeakQueue.Enqueue(message);
@@ -215,21 +252,44 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    private void ProcessSpeakQueue()
+    private async void ProcessSpeakQueue()
     {
-        while(SpeakQueue.TryDequeue(out var msg))
+        while(SpeakQueue.TryDequeue(out var msg) && !cts.IsCancellationRequested)
         {
-            switch (Configuration.TTSProvider)
+            var speakTask = Task.Run(() =>
             {
-                case TextToSpeechType.Kokoro:
-                    TextToSpeech?.Speak(msg, Configuration.Kokoro.UseEspeak);
-                    break;
-                case TextToSpeechType.WindowsSystem:
-                    TextToSpeech?.Speak(msg);
-                    break;
-                default:
-                    break;
+                switch (Configuration.TTSProvider)
+                {
+                    case TextToSpeechType.Kokoro:
+                        TextToSpeech?.Speak(msg, Configuration.Kokoro.UseEspeak);
+                        break;
+                    case TextToSpeechType.WindowsSystem:
+                    case TextToSpeechType.DecTalk:
+                        TextToSpeech?.Speak(msg);
+                        break;
+                    default:
+                        break;
+                }
+            });
+            var timeoutTask = Task.Delay(5000);
+            var finished = await Task.WhenAny(speakTask, timeoutTask);
+            if(finished == timeoutTask && !cts.IsCancellationRequested)
+            {
+                STLog.Log.Error("\n"+
+                    "  A speaker thread timed out trying to play a TTS message. If you're seeing this, then you\n"+
+                    "  should restart this plugin or swap TTS providers to \"reset\" the TextToSpeech instance.\n"+
+                    "  Most likely DECtalk misbehaving.");
+                StopAudioPlayback(true);
+                PrintResetMsg();
+                break;
             }
+        }
+
+        if(cts.IsCancellationRequested)
+        {
+            STLog.Log.Information("ProcessSpeakQueue(): Cancellation Requested!");
+            ttsInProgress = false;
+            return;
         }
 
         lock(speakLock)
@@ -243,7 +303,7 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    internal void StopAudioPlayback(bool clearQueue = false) { SpeakQueue.Clear(); AudioPlayer.StopPlayback(clearQueue); }
+    internal void StopAudioPlayback(bool clearQueue = false) { cts.Cancel(); SpeakQueue.Clear(); AudioPlayer.StopPlayback(clearQueue); }
     internal void SetAudioBackend(AudioOutputType type) => AudioPlayer.InitializeAudioBackend(type,null);
     internal void SetAudioOutputDevice(string id) => AudioPlayer.SetOutputDevice(id);
     internal void SetAudioBlending(bool blend) => AudioPlayer.BlendStreams = blend;

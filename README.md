@@ -12,6 +12,7 @@ Responses can be done in one of the below methods or any combination of the thre
 * Text-to-Speech 
   * Kokoro
   * Windows System
+  * DECtalk
 
 New Triggers can be created by either clicking the "Add" button on the Triggers tab or saving a chat log message on the Chat History tab.
 Triggers may also be shared and imported using the Import/Export buttons.
@@ -42,6 +43,8 @@ Message history is never saved outside of the plugin running and is lost when th
 ## Credits
 * Kokoro C# package from [Lyrcaxis/KokoroSharp](https://github.com/Lyrcaxis/KokoroSharp)
   * Original model: [Kokoro TTS](https://huggingface.co/hexgrad/Kokoro-82M)
+* DECtalk from the latest release at [dectalk/dectalk](https://github.com/dectalk/dectalk)
+  * C# implementation based on [NotNite/MoonbaseOmega](https://github.com/NotNite/MoonbaseOmega)
 * Sound Effects functions from [Ottermandias/ChatAlerts](https://github.com/Ottermandias/ChatAlerts)
 * Extended chat type info from [Infiziert90/ChatTwo](https://github.com/Infiziert90/ChatTwo)
 * Pre-Built English IPA Dictionary from [open-dict-data/ipa-dict](https://github.com/open-dict-data/ipa-dict)
