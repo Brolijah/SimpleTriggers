@@ -218,7 +218,7 @@ public sealed class Plugin : IDalamudPlugin
         (i, m) =>
         {
             SwapTTSBackend();
-            PrintChatMsg($"Reloaded TTS backend {TTSProviders.ToName(Configuration.TTSProvider)}");
+            PrintChatMsg($"Reloaded {TTSProviders.ToName(Configuration.TTSProvider)}");
             ChatGui.RemoveChatLinkHandler(34);
         });
 
