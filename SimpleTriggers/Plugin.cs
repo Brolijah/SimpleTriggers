@@ -196,12 +196,14 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetSpeed(Configuration.WinSpeech.Speed);
                 TextToSpeech.SetVolume(Configuration.WinSpeech.Volume);
                 break;
+#if DEBUG
             case TextToSpeechType.DecTalk:
                 TextToSpeech = new DecTalk(PluginInterface.GetPluginConfigDirectory(), AudioPlayer);
                 TextToSpeech.SetVoice(DecTalkVoiceHelper.ToString(Configuration.DecTalk.Voice));
                 TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
                 TextToSpeech.SetVolume(Configuration.DecTalk.Volume);
                 break;
+#endif
         }
     }
 
@@ -264,7 +266,9 @@ public sealed class Plugin : IDalamudPlugin
                         TextToSpeech?.Speak(msg, Configuration.Kokoro.UseEspeak);
                         break;
                     case TextToSpeechType.WindowsSystem:
+#if DEBUG
                     case TextToSpeechType.DecTalk:
+#endif
                         TextToSpeech?.Speak(msg);
                         break;
                     default:
@@ -277,8 +281,7 @@ public sealed class Plugin : IDalamudPlugin
             {
                 STLog.Log.Error("\n"+
                     "  A speaker thread timed out trying to play a TTS message. If you're seeing this, then you\n"+
-                    "  should restart this plugin or swap TTS providers to \"reset\" the TextToSpeech instance.\n"+
-                    "  Most likely DECtalk misbehaving.");
+                    "  should restart this plugin or swap TTS providers to \"reset\" the TextToSpeech instance.");
                 StopAudioPlayback(true);
                 PrintResetMsg();
                 break;

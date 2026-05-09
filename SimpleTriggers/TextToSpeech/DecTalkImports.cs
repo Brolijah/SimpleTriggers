@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace SimpleTriggers.TextToSpeech;
 
+#if DEBUG
 // https://github.com/dectalk/dectalk/blob/develop/src/dapi/src/api/ttsapi.h
 public unsafe partial class DecTalkImports {
     private static bool isResolverRegistered = false;
@@ -129,3 +130,4 @@ public unsafe partial class DecTalkImports {
         public uint Reserved;
     }
 }
+#endif

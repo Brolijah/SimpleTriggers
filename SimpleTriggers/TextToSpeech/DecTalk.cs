@@ -10,6 +10,7 @@ using SimpleTriggers.Logger;
 
 namespace SimpleTriggers.TextToSpeech;
 
+#if DEBUG
 public class DecTalk : ITextToSpeech {
     private nint handle = IntPtr.Zero;
     private readonly Task<bool> libraryTask;
@@ -323,3 +324,4 @@ public class DecTalk : ITextToSpeech {
         }
     }
 }
+#endif

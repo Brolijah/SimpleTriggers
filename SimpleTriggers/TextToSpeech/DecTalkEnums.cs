@@ -2,6 +2,7 @@ using System;
 
 namespace SimpleTriggers.TextToSpeech;
 
+#if DEBUG
 // https://github.com/dectalk/dectalk/blob/32efa30ef2e216b3ad091c41abf5b502498a19aa/src/dapi/src/api/ttsapi.h
 
 public enum DtError : uint
@@ -79,3 +80,4 @@ public static class DecTalkVoiceHelper
 		return Enum.GetName(voice) ?? $"Who? {{{voice}}}";
 	}
 }
+#endif

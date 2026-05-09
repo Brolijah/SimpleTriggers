@@ -736,10 +736,12 @@ public class MainWindow : Window, IDisposable
                 STWinSpeechUI.DrawWinSpeechSettings(plugin);
             }
 
+#if DEBUG
             if(plugin.Configuration.TTSProvider == TextToSpeechType.DecTalk)
             {
                 DecTalkUI.DrawDecTalkSettings(plugin);
             }
+#endif
             ImGui.Unindent();
             ImGui.NewLine();
         }
