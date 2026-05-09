@@ -17,12 +17,6 @@ public class DecTalk : ITextToSpeech {
     private readonly CancellationTokenSource cts = new();
     private readonly string configPath;
     private const string ZipUrl = "https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip";
-    // https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip
-    //   sha256: 4a778056c109b37f95ade4b3d3e308b9396b22a4b0629f9756ec0e5051b9636d
-    // AMD64/lib/dtalk_us.dll
-    //   sha256: 9ccad42378b01581ad6cd2fdfcf3af565c8d8bb87008d56360a1c67b27029fb1
-    // AMD64/dic/dtalk_us.dic
-    //   sha256: 3aab048d867585185bbff239181f46342403a1d151942d2d544a42e5b621373c
     private DecTalkVoice voice = DecTalkVoice.PAUL;
     private uint speed = 200;
 
@@ -36,15 +30,24 @@ public class DecTalk : ITextToSpeech {
 
     private async Task<bool> LoadLibraryAsync(string configPath)
     {
+        // https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip
+        //   sha256: 4a778056c109b37f95ade4b3d3e308b9396b22a4b0629f9756ec0e5051b9636d
+        // AMD64/lib/dtalk_us.dll
+        //   sha256: 9ccad42378b01581ad6cd2fdfcf3af565c8d8bb87008d56360a1c67b27029fb1
+        // AMD64/dic/dtalk_us.dic
+        //   sha256: 3aab048d867585185bbff239181f46342403a1d151942d2d544a42e5b621373c
+        
         bool download = false;
         var zipFiles = new[] {
             (path: "AMD64/lib/dtalk_us.dll", hash: "9ccad42378b01581ad6cd2fdfcf3af565c8d8bb87008d56360a1c67b27029fb1"),
             (path: "AMD64/dic/dtalk_us.dic", hash: "3aab048d867585185bbff239181f46342403a1d151942d2d544a42e5b621373c")
         };
+
+        var resPath = Path.Join(configPath, "dectalk");
         try {
             foreach(var file in zipFiles)
             {
-                var fileOnDisk = Path.Join(configPath, "dectalk", Path.GetFileName(file.path));
+                var fileOnDisk = Path.Join(resPath, Path.GetFileName(file.path));
                 if(Path.Exists(fileOnDisk))
                 {
                     var hash = SHA256.HashData(await File.ReadAllBytesAsync(fileOnDisk, cts.Token));
@@ -61,7 +64,6 @@ public class DecTalk : ITextToSpeech {
             if(download)
             {
                 STLog.Log.Information("Downloading DECtalk files...");
-                var resPath = Path.Join(configPath, "dectalk");
                 if(!Directory.Exists(resPath)) Directory.CreateDirectory(resPath);
                 using var client = new HttpClient();
                 var zipData = await client.GetByteArrayAsync(ZipUrl);
@@ -269,20 +271,19 @@ public class DecTalk : ITextToSpeech {
         if(this.handle == IntPtr.Zero)
         {
             try {
-                var temp = IntPtr.Zero;
                 DecTalkImports.SetupResolver(Path.Join(configPath, "dectalk/dtalk_us.dll"));
                 var dictionaryPath = Path.Join(configPath, "dectalk/dtalk_us.dic");
                 AssertCall(
-                    DecTalkImports.TextToSpeechStartupExFonix(ref temp, -1,
-                        DtDeviceOptions.DO_NOT_USE_AUDIO_DEVICE, null, 0, dictionaryPath),
-                        "TextToSpeechStartup");
+                    DecTalkImports.TextToSpeechStartupExFonix(ref this.handle, -1,
+                        DtDeviceOptions.DO_NOT_USE_AUDIO_DEVICE, null, 0, dictionaryPath), "TextToSpeechStartup");
                 AssertCall(
-                    DecTalkImports.TextToSpeechOpenInMemory(temp, DtWaveFormat.WAVE_FORMAT_1M16),
+                    DecTalkImports.TextToSpeechOpenInMemory(this.handle, DtWaveFormat.WAVE_FORMAT_1M16),
                     "TextToSpeechOpenInMemory");
                 // workaround for a race condition where these may be set before the library is loaded
-                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(temp, this.voice), "TextToSpeechSetSpeaker");
-                AssertCall(DecTalkImports.TextToSpeechSetRate(temp, this.speed), "TextToSpeechSetRate");
-                this.handle = temp;
+                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, this.voice), "TextToSpeechSetSpeaker");
+                AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
+                // attempts to clean out the runtime before we use it
+                Reset(true);
             } catch (Exception e) {
                 STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
                 this.handle = IntPtr.Zero;
