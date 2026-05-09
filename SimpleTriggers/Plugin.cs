@@ -51,11 +51,13 @@ public sealed class Plugin : IDalamudPlugin
     {
         STLog.SetLogger(Log);
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) Configuration.MaxLogHistory = MaxLogHistoryCeiling;
+        if(!Enum.IsDefined(Configuration.AudioBackend)) Configuration.AudioBackend = AudioOutputType.DirectSound;
+        if(!Enum.IsDefined(Configuration.TTSProvider)) Configuration.TTSProvider = TextToSpeechType.None;
 
-        if(Configuration.MaxLogHistory > MaxLogHistoryCeiling) { Configuration.MaxLogHistory = MaxLogHistoryCeiling; }
         ChatLog = new Queue<string>((int)MaxLogHistoryCeiling);
         ChatListener = new ChatListener(this, ChatGui);
-        if(!Enum.IsDefined(Configuration.AudioBackend)) Configuration.AudioBackend = AudioOutputType.DirectSound;
+
         AudioPlayer = new AudioPlayer(Configuration.AudioOutputDevice, Configuration.AudioBackend) { BlendStreams=Configuration.BlendAudioStreams };
         SwapTTSBackend();
 
