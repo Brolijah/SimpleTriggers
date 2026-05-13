@@ -5,61 +5,38 @@ using System.Runtime.InteropServices;
 namespace SimpleTriggers.TextToSpeech;
 
 #if DEBUG
-// https://github.com/dectalk/dectalk/blob/develop/src/dapi/src/api/ttsapi.h
-public unsafe partial class DecTalkImports {
+// https://github.com/dectalk/DECtalkMini/blob/dectalk-develop/include/epsonapi.h
+public partial class DecTalkImports {
     private static bool isResolverRegistered = false;
     private static nint pHandle;
     private static string libraryPath = "";
     // Placeholder for the import resolver (see below)
-    private const string LibraryName = "dtalk_us";
+    private const string LibraryName = "dtc";
 
-    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    public static partial uint TextToSpeechStartupExFonix(
-        ref nint handle,
-        int deviceNumber,
-        DtDeviceOptions deviceOptions,
-        CallbackDelegate? callbackRoutine,
-        int instanceParameter,
-        string dictionary
+    [LibraryImport(LibraryName)]
+    public static partial int TextToSpeechInit(
+        CallbackDelegate? callback = null,
+        nint dictionary = 0
     );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void CallbackDelegate(long param1, long param2, uint cbParameter, uint uiMsg);
-    
+    public delegate nint CallbackDelegate(nint buffer, long length, int phoneme);
+
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    public static partial uint TextToSpeechSpeak(nint handle, string text, DtSpeechFlags flags);
+    public static partial int TextToSpeechStart(string text, nint unused, DtWaveFormat format);
 
     [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechSync(nint handle);
+    public static partial int TextToSpeechReset();
 
     [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechSetSpeaker(nint handle, DecTalkVoice speaker);
+    public static partial int TextToSpeechSync();
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int TextToSpeechChangeVoice(string voice);
 
     [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechOpenInMemory(nint handle, DtWaveFormat dwFormat);
+    public static partial void TextToSpeechSetRate(int rate);
 
-    [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechCloseInMemory(nint handle);
-
-    [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechAddBuffer(nint handle, TTS_BUFFER* ttsBuffer);
-
-    [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechReturnBuffer(nint handle, TTS_BUFFER* ttsBuffer);
-
-    [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechSetRate(nint handle, uint rate);
-
-    [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechShutdown(nint handle);
-
-    [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechGetStatus(
-        nint handle, [In] DtStatusId[] identifiers, [Out] uint[] statuses, uint numStatuses);
-
-    // yes, `reset` is a four byte bool here https://dectalk.github.io/dectalk/idh_sdk_2_texttospeechreset.htm
-    [LibraryImport(LibraryName)]
-    public static partial uint TextToSpeechReset(nint handle, [MarshalAs(UnmanagedType.Bool)] bool reset);
 
     public static void SetupResolver(string dllPath)
     {
@@ -81,53 +58,6 @@ public unsafe partial class DecTalkImports {
             return pHandle;
         }
         return IntPtr.Zero;
-    }
-
-    public static void Free()
-    {
-        NativeLibrary.Free(pHandle);
-        pHandle = IntPtr.Zero;
-    }
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
-    public static extern IntPtr GetModuleHandle(string lpModuleName);
-    public static bool IsLoaded(string dllPath)
-    {
-        return GetModuleHandle(dllPath) != IntPtr.Zero;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct TTS_PHONEME {
-        public nint Phoneme;
-        public nint PhonemeSampleNumber;
-        public nint PhonemeDuration;
-        public readonly nint Reserved;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct TTS_INDEX
-    {
-        public nint IndexValue;
-        public nint IndexSampleNumber;
-        public readonly nint Reserved;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct TTS_BUFFER
-    {
-        public IntPtr Data;
-        public TTS_PHONEME* PhonemeArray;
-        public TTS_INDEX* IndexArray;
-
-        public uint MaximumBufferLength;
-        public uint MaximumNumberOfPhonemeChanges;
-        public uint MaximumNumberOfIndexMarks;
-
-        public uint BufferLength;
-        public uint NumberOfPhonemeChanges;
-        public uint NumberOfIndexMarks;
-
-        public uint Reserved;
     }
 }
 #endif

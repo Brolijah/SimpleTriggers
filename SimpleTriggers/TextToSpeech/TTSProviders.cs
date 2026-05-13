@@ -22,7 +22,7 @@ public static class TTSProviders
             TextToSpeechType.Kokoro         => "Kokoro",
             TextToSpeechType.WindowsSystem  => "Windows System",
         #if DEBUG
-            TextToSpeechType.DecTalk        => "DECtalk",
+            TextToSpeechType.DecTalk        => "DECtalkMini",
         #endif
             //TextToSpeechType.eSpeakNG       => "espeak-ng",
             //TextToSpeechType.flite          => "flite",

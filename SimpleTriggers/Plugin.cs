@@ -201,7 +201,7 @@ public sealed class Plugin : IDalamudPlugin
 #if DEBUG
             case TextToSpeechType.DecTalk:
                 TextToSpeech = new DecTalk(PluginInterface.GetPluginConfigDirectory(), AudioPlayer);
-                TextToSpeech.SetVoice(DecTalkVoiceHelper.ToString(Configuration.DecTalk.Voice));
+                TextToSpeech.SetVoice(DecTalkVoiceHelper.ToMiniString(Configuration.DecTalk.Voice));
                 TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
                 TextToSpeech.SetVolume(Configuration.DecTalk.Volume);
                 break;
