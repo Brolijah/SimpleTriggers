@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 
 namespace SimpleTriggers.TextToSpeech;
 
-#if DEBUG
 // https://github.com/dectalk/DECtalkMini/blob/dectalk-develop/include/epsonapi.h
 public partial class DecTalkImports {
     private static bool isResolverRegistered = false;
@@ -60,4 +59,3 @@ public partial class DecTalkImports {
         return IntPtr.Zero;
     }
 }
-#endif

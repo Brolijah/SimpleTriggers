@@ -736,12 +736,10 @@ public class MainWindow : Window, IDisposable
                 STWinSpeechUI.DrawWinSpeechSettings(plugin);
             }
 
-#if DEBUG
             if(plugin.Configuration.TTSProvider == TextToSpeechType.DecTalk)
             {
                 DecTalkUI.DrawDecTalkSettings(plugin);
             }
-#endif
             ImGui.Unindent();
             ImGui.NewLine();
         }
@@ -820,7 +818,6 @@ public class MainWindow : Window, IDisposable
                 tempIdx += c.Triggers.Count;
             }
             state.trigListIndex = tempIdx + state.trigSubIndex;
-            //Log.Debug($"activeCategory.Name == \"{state.activeCategory.Name}\" ;; trigListIndex == {state.trigListIndex} ;; trigSubIndex == {state.trigSubIndex}");
             state.activeTrigger = stopAtCategory ? null : state.activeCategory.Triggers.ElementAt(state.trigSubIndex);
             state.activeCategory.opened = openActiveCategory;
         }

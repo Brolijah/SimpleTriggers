@@ -8,7 +8,6 @@ using Dalamud.Interface.Components;
 
 namespace SimpleTriggers.Windows;
 
-#if DEBUG
 public static class DecTalkUI
 {
     public static void DrawDecTalkSettings(Plugin plugin)
@@ -73,6 +72,4 @@ public static class DecTalkUI
             ImGui.Text("Loading library...");
         }
     }
-
 }
-#endif

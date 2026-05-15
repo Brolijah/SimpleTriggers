@@ -198,14 +198,12 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetSpeed(Configuration.WinSpeech.Speed);
                 TextToSpeech.SetVolume(Configuration.WinSpeech.Volume);
                 break;
-#if DEBUG
             case TextToSpeechType.DecTalk:
                 TextToSpeech = new DecTalk(PluginInterface.GetPluginConfigDirectory(), AudioPlayer);
                 TextToSpeech.SetVoice(DecTalkVoiceHelper.ToMiniString(Configuration.DecTalk.Voice));
                 TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
                 TextToSpeech.SetVolume(Configuration.DecTalk.Volume);
                 break;
-#endif
         }
     }
 
@@ -214,6 +212,7 @@ public sealed class Plugin : IDalamudPlugin
         ChatGui.Print(message, Name, 529);
     }
 
+    // Unsure if this is needed anymore
     private void PrintResetMsg()
     {
         var ssb = new SeStringBuilder();
@@ -226,8 +225,7 @@ public sealed class Plugin : IDalamudPlugin
             ChatGui.RemoveChatLinkHandler(34);
         });
 
-        ssb.AddText("A speaker thread timed out trying to play a TTS message. If you're seeing this, then you "+
-                    "should reload the TTS backend. (Most likely DECtalk misbehaving.)\n");
+        ssb.AddText("A speaker thread timed out trying to play a TTS message. If you're seeing this, then you should reload the TTS backend.\n");
         ssb.AddUiForeground(32);
         ssb.Add(payload);
         ssb.AddText("[Click to Reload TTS]");
@@ -268,9 +266,7 @@ public sealed class Plugin : IDalamudPlugin
                         TextToSpeech?.Speak(msg, Configuration.Kokoro.UseEspeak);
                         break;
                     case TextToSpeechType.WindowsSystem:
-#if DEBUG
                     case TextToSpeechType.DecTalk:
-#endif
                         TextToSpeech?.Speak(msg);
                         break;
                     default:

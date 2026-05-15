@@ -10,7 +10,6 @@ using SimpleTriggers.Logger;
 
 namespace SimpleTriggers.TextToSpeech;
 
-#if DEBUG
 public class DecTalk : ITextToSpeech {
     private bool _initialized = false;
     private DecTalkImports.CallbackDelegate cb;
@@ -35,13 +34,13 @@ public class DecTalk : ITextToSpeech {
     private async Task<bool> LoadLibraryAsync(string configPath)
     {
         // https://github.com/Brolijah/DECtalkMini/releases/download/latest/speak-windows.zip
-        //   sha256: e4863d019f25947b1fb13d67e8730bdfec068bfa6c728d224d79463dd4107f83
+        //   sha256: dad36a0f85ce7ad122837ac8060ec22a897c872e3435d6ede711211d766192ff
         // speak-win64-nofs/dtc.dll
-        //   sha256: b0e13efc8a6e1b459f3f10e6b5c7992ca5e0f7dcca04fade1367a79d8e318b84
+        //   sha256: 00f9cf75201d503bbcc5af2828e0796abc45b584e70d50f95efbdf5957b36e34
         
         bool download = false;
         var zipFiles = new[] {
-            (path: "speak-win64-nofs/dtc.dll", hash: "b0e13efc8a6e1b459f3f10e6b5c7992ca5e0f7dcca04fade1367a79d8e318b84"),
+            (path: "speak-win64-nofs/dtc.dll", hash: "00f9cf75201d503bbcc5af2828e0796abc45b584e70d50f95efbdf5957b36e34"),
         };
 
         var resPath = Path.Join(configPath, "dectalk");
@@ -68,7 +67,7 @@ public class DecTalk : ITextToSpeech {
                 if(!Directory.Exists(resPath)) Directory.CreateDirectory(resPath);
                 using var client = new HttpClient();
                 var zipData = await client.GetByteArrayAsync(ZipUrl);
-                if(!(Convert.ToHexStringLower(SHA256.HashData(zipData)) == "e4863d019f25947b1fb13d67e8730bdfec068bfa6c728d224d79463dd4107f83"))
+                if(!(Convert.ToHexStringLower(SHA256.HashData(zipData)) == "dad36a0f85ce7ad122837ac8060ec22a897c872e3435d6ede711211d766192ff"))
                 {
                     STLog.Log.Error("Something is wrong with the source DECtalk archive! Aborting download!!");
                     return false;
@@ -108,15 +107,13 @@ public class DecTalk : ITextToSpeech {
             try {
                 activeBuffer = [];
                 SetVoice(this.voice);
-                STLog.Log.Debug("SpeakInternal()");
-                SpeakInternal(text); // on windows this *eventually* CTD's the whole game, investigating
+                SpeakInternal(text);
                 Sync();
                 audioPlayer.Enqueue(TrimAudioBuffer(activeBuffer));
             } catch (Exception e)
             {
                 STLog.Log.Error(e, "Exception caught:");
             } finally { activeBuffer = []; }
-            STLog.Log.Debug("Exiting Speak()");
         }
     }
 
@@ -257,4 +254,3 @@ public class DecTalk : ITextToSpeech {
         return 0;
     }
 }
-#endif
