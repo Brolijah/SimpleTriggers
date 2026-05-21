@@ -415,6 +415,7 @@ public class MainWindow : Window, IDisposable
         {
             if(child)
             {
+                var invalid = false; // used to escape if we delete a category inside this loop
                 var idx = 0;
                 foreach(var category in plugin.Configuration.TriggerTree)
                 {
@@ -473,7 +474,7 @@ public class MainWindow : Window, IDisposable
                                         if(ImGui.MenuItem("Remove Trigger"))
                                         {
                                             category.Remove(trigger);
-                                            if(category.IsEmpty()) { plugin.Configuration.TriggerTree.Remove(category); }
+                                            if(category.IsEmpty()) { plugin.Configuration.TriggerTree.Remove(category); invalid = true; }
                                             state.Reset();
                                             plugin.Configuration.Save();
                                             break; // exit the loop because the list is now invalidated
@@ -481,8 +482,8 @@ public class MainWindow : Window, IDisposable
                                     }
                                 }
                             }
+                            if(invalid) break; // only happens if we deleted the current category (cuz it was empty)
                         } else { category.opened = false; }
-
                     }
                     ++idx;
                 }
@@ -547,7 +548,7 @@ public class MainWindow : Window, IDisposable
                                 state.chatIndex = index;
                                 if(ImGui.MenuItem("Save to Triggers"))
                                 {
-                                    AddTrigger(new TriggerEntry(ses), plugin.DefaultCategoryName);
+                                    AddTrigger(new TriggerEntry(ses.ReplaceLineEndings(" ")), plugin.DefaultCategoryName);
                                     state.chatIndex = -1;
                                     plugin.Configuration.Save();
                                 }

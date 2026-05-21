@@ -68,7 +68,7 @@ internal class ChatListener : IDisposable
                         if(trig.enabled)
                         {
                             var expression = trig.expression;
-                            if(msgStr.Contains(expression, StringComparison.CurrentCultureIgnoreCase))
+                            if(msgStr.ReplaceLineEndings(" ").Contains(expression, StringComparison.CurrentCultureIgnoreCase))
                             {
                                 if(trig.doResponseTTS && (trig.response.Length > 0))
                                 {
