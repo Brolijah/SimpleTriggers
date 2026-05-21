@@ -24,7 +24,6 @@ public class WinSpeechConfig
     public WinSpeechConfig() {}
 }
 
-#if DEBUG
 public class DecTalkConfig
 {
     public DecTalkVoice Voice = DecTalkVoice.PAUL; // 0
@@ -32,7 +31,6 @@ public class DecTalkConfig
     public int Volume = 100; // [0, 100]
     public DecTalkConfig() {}
 }
-#endif
 
 [Serializable]
 public class Configuration : IPluginConfiguration
@@ -40,6 +38,9 @@ public class Configuration : IPluginConfiguration
     public int Version { get; set; } = 0;
     public bool EnableTriggers = true;
     public uint MaxLogHistory = 500;
+    public ToastStyle ToastStyle = ToastStyle.Quest;
+    public GimmickStyle GimmickStyle = GimmickStyle.Info;
+    public int GimmickDurationSeconds = 3;
     public AudioOutputType AudioBackend = AudioOutputType.DirectSound;
     public string AudioOutputDevice = "";
     public bool AllowAudioBoost = false; // Lets the user boost the volume above a normally safe amount
@@ -50,9 +51,7 @@ public class Configuration : IPluginConfiguration
     public TextToSpeechType TTSProvider = TextToSpeechType.None;
     public KokoroConfig Kokoro { get; set; } = new();
     public WinSpeechConfig WinSpeech { get; set; } = new();
-#if DEBUG
     public DecTalkConfig DecTalk { get; set; } = new();
-#endif
     public TriggerTree TriggerTree { get; set; } = new();
 
     // The below exists just to make saving less cumbersome

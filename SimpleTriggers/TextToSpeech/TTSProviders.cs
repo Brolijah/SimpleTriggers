@@ -5,11 +5,10 @@ public enum TextToSpeechType : byte
     None = 0,
     Kokoro,
     WindowsSystem,
-#if DEBUG
     DecTalk,
-#endif
     //eSpeakNG,
-    //flite
+    //flite,
+    //Custom = 99
 }
 
 public static class TTSProviders
@@ -21,11 +20,10 @@ public static class TTSProviders
             TextToSpeechType.None           => "None",
             TextToSpeechType.Kokoro         => "Kokoro",
             TextToSpeechType.WindowsSystem  => "Windows System",
-        #if DEBUG
-            TextToSpeechType.DecTalk        => "DECtalk",
-        #endif
+            TextToSpeechType.DecTalk        => "DECtalkMini",
             //TextToSpeechType.eSpeakNG       => "espeak-ng",
             //TextToSpeechType.flite          => "flite",
+            //TextToSpeechType.Custom         => "Custom",
             _                               => ""
         };
     }

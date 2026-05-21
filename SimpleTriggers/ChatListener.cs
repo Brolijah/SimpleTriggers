@@ -84,6 +84,11 @@ internal class ChatListener : IDisposable
                                 {
                                     plugin.PrintChatMsg(trig.response);
                                 }
+
+                                if(trig.doPopup && (trig.response.Length > 0))
+                                {
+                                    plugin.ShowPopupText(trig.response, trig.popupStyle);
+                                }
                             }
                         }
                     }

@@ -10,38 +10,37 @@ using SimpleTriggers.Logger;
 
 namespace SimpleTriggers.TextToSpeech;
 
-#if DEBUG
 public class DecTalk : ITextToSpeech {
-    private nint handle = IntPtr.Zero;
+    private bool _initialized = false;
+    private DecTalkImports.CallbackDelegate cb;
     private readonly Task<bool> libraryTask;
     private readonly AudioPlayer audioPlayer;
     private readonly CancellationTokenSource cts = new();
     private readonly string configPath;
-    private const string ZipUrl = "https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip";
-    private DecTalkVoice voice = DecTalkVoice.PAUL;
-    private uint speed = 200;
+    private const string ZipUrl = "https://github.com/Brolijah/DECtalkMini/releases/download/latest/speak-windows.zip";
+    private readonly Lock speakLock = new();
+    private byte[] activeBuffer = [];
+    private string voice = "np"; // Paul
+    private int speed = 200;
 
     public DecTalk(string configPath, AudioPlayer player)
     {
-        this.configPath = configPath;
+        cb = Callback;
         audioPlayer = player;
         audioPlayer.SetSourceWaveFormat(11025, 1);
-        libraryTask = LoadLibraryAsync(configPath);
+        libraryTask = LoadLibraryAsync(this.configPath = configPath);
     }
 
     private async Task<bool> LoadLibraryAsync(string configPath)
     {
-        // https://github.com/dectalk/dectalk/releases/download/2023-10-30/vs2022.zip
-        //   sha256: 4a778056c109b37f95ade4b3d3e308b9396b22a4b0629f9756ec0e5051b9636d
-        // AMD64/lib/dtalk_us.dll
-        //   sha256: 9ccad42378b01581ad6cd2fdfcf3af565c8d8bb87008d56360a1c67b27029fb1
-        // AMD64/dic/dtalk_us.dic
-        //   sha256: 3aab048d867585185bbff239181f46342403a1d151942d2d544a42e5b621373c
+        // https://github.com/Brolijah/DECtalkMini/releases/download/latest/speak-windows.zip
+        //   sha256: dad36a0f85ce7ad122837ac8060ec22a897c872e3435d6ede711211d766192ff
+        // speak-win64-nofs/dtc.dll
+        //   sha256: 00f9cf75201d503bbcc5af2828e0796abc45b584e70d50f95efbdf5957b36e34
         
         bool download = false;
         var zipFiles = new[] {
-            (path: "AMD64/lib/dtalk_us.dll", hash: "9ccad42378b01581ad6cd2fdfcf3af565c8d8bb87008d56360a1c67b27029fb1"),
-            (path: "AMD64/dic/dtalk_us.dic", hash: "3aab048d867585185bbff239181f46342403a1d151942d2d544a42e5b621373c")
+            (path: "speak-win64-nofs/dtc.dll", hash: "00f9cf75201d503bbcc5af2828e0796abc45b584e70d50f95efbdf5957b36e34"),
         };
 
         var resPath = Path.Join(configPath, "dectalk");
@@ -68,7 +67,7 @@ public class DecTalk : ITextToSpeech {
                 if(!Directory.Exists(resPath)) Directory.CreateDirectory(resPath);
                 using var client = new HttpClient();
                 var zipData = await client.GetByteArrayAsync(ZipUrl);
-                if(!(Convert.ToHexStringLower(SHA256.HashData(zipData)) == "4a778056c109b37f95ade4b3d3e308b9396b22a4b0629f9756ec0e5051b9636d"))
+                if(!(Convert.ToHexStringLower(SHA256.HashData(zipData)) == "dad36a0f85ce7ad122837ac8060ec22a897c872e3435d6ede711211d766192ff"))
                 {
                     STLog.Log.Error("Something is wrong with the source DECtalk archive! Aborting download!!");
                     return false;
@@ -97,58 +96,24 @@ public class DecTalk : ITextToSpeech {
     {
         cts.Cancel();
         cts.Dispose();
-        if(this.handle != IntPtr.Zero)
-        {
-            // This is *purposefully* bad code. Until I can figure out why dectalk locks *randomly*,
-            // this will at the very least not block the main thread.
-            Task.Run(() =>
-            {
-                DecTalkImports.TextToSpeechShutdown(this.handle); // don't care about the return of this
-                DecTalkImports.Free();
-            });
-        }
-        GC.SuppressFinalize(this);
+        libraryTask.Dispose();
     }
 
     public void Speak(string text, bool extra)
     {
         if(!IsInitialized()) return;
-
-        byte[] data = [];
-        string[] punctuation = [".", ",", "!", "?", ";", ": "];
-        var clauses = text.Split(punctuation, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        try {
-            foreach(var clause in clauses)
+        lock(speakLock)
+        {
+            try {
+                activeBuffer = [];
+                SetVoice(this.voice);
+                SpeakInternal(text);
+                Sync();
+                audioPlayer.Enqueue(TrimAudioBuffer(activeBuffer));
+            } catch (Exception e)
             {
-                cts.Token.ThrowIfCancellationRequested();
-                // If something bad happens here... pray
-                unsafe {
-                    var buffSize = 1024 * 1024 * 2; // 2 MB ~1m30s?
-                    var buffer = new DecTalkImports.TTS_BUFFER();
-                    buffer.Data = Marshal.AllocHGlobal(buffSize); // TODO: can create a memory leak if we throw
-                    buffer.MaximumBufferLength = (uint)buffSize;
-                    cts.Token.ThrowIfCancellationRequested();
-
-                    AddBuffer(&buffer);
-                    SpeakInternal(clause, DtSpeechFlags.Force);
-                    cts.Token.ThrowIfCancellationRequested();
-
-                    // If Sync hangs, this gets captured by the timeoutTask in ProcessSpeakQueue
-                    // Sync() waits MAX 30 minutes. Still researching how to prevent this.
-                    Sync();
-                    cts.Token.ThrowIfCancellationRequested();
-
-                    var chunk = new byte[buffer.BufferLength];
-                    Marshal.Copy(buffer.Data, chunk, 0, (int)buffer.BufferLength);
-                    data = [.. data, .. TrimAudioBuffer(chunk)];
-                    Marshal.FreeHGlobal(buffer.Data);
-                }
-            }
-            cts.Token.ThrowIfCancellationRequested();
-            Reset(true);
-            audioPlayer.Enqueue(data);
-        } catch (Exception e) {
-            STLog.Log.Error(e, "DecTalk.Speak(): Exception caught:");
+                STLog.Log.Error(e, "Exception caught:");
+            } finally { activeBuffer = []; }
         }
     }
 
@@ -200,15 +165,10 @@ public class DecTalk : ITextToSpeech {
 
     public void SetVoice(string voice)
     {
-        if(!Enum.TryParse(voice, true, out DecTalkVoice dv))
-        {
-            STLog.Log.Warning($"Could not find voice {voice}. Falling back to default.");
-            dv = DecTalkVoice.PAUL;
-        }
-        this.voice = dv;
+        this.voice = voice;
         if(!IsInitialized()) return;
         try {
-            AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, dv), "TextToSpeechSetSpeaker");
+            AssertCall(DecTalkImports.TextToSpeechChangeVoice(voice), "ChangeVoice");
         } catch (Exception e) {
             STLog.Log.Error(e, "Exception caught:");
         }
@@ -221,13 +181,9 @@ public class DecTalk : ITextToSpeech {
 
     public void SetSpeed(float speed)
     {
-        this.speed = (uint)speed;
+        this.speed = (int)speed;
         if(!IsInitialized()) return;
-        try {
-            AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
-        } catch (Exception e) {
-            STLog.Log.Error(e, "Exception caught:");
-        }
+        DecTalkImports.TextToSpeechSetRate(this.speed);
     }
 
     public void SetLanguage(string lang)
@@ -243,85 +199,58 @@ public class DecTalk : ITextToSpeech {
         return ret;
     }
 
-    private void Reset(bool reset)
+    private void Reset()
     {
-        AssertCall(DecTalkImports.TextToSpeechReset(this.handle, reset), "TextToSpeechReset");
+        AssertCall(DecTalkImports.TextToSpeechReset(), "Reset");
     }
 
-    private void SpeakInternal(string text, DtSpeechFlags flags)
+    private void SpeakInternal(string text)
     {
-        AssertCall(DecTalkImports.TextToSpeechSpeak(this.handle, text, flags), "TextToSpeechSpeak");
+        AssertCall(DecTalkImports.TextToSpeechStart(text, 0, DtWaveFormat.WAVE_FORMAT_1M16), "Start");
     }
 
     private void Sync()
     {
-        AssertCall(DecTalkImports.TextToSpeechSync(this.handle), "TextToSpeechSync");
+        AssertCall(DecTalkImports.TextToSpeechSync(), "Sync");
     }
 
-    private unsafe void AddBuffer(DecTalkImports.TTS_BUFFER* buffer)
-    {
-        AssertCall(DecTalkImports.TextToSpeechAddBuffer(this.handle, buffer), "TextToSpeechAddBuffer");
-    }
-
-    private static void AssertCall(uint value, string method) {
-        if (value != 0) throw new Exception($"Calling {method} returned error code {(DtError)value}");
+    private static void AssertCall(int value, string method) {
+        if (value != 0) throw new Exception($"TextToSpeech{method} returned error code {(DtError)value}");
     }
 
     private bool TryInitLibrary()
     {
-        if(this.handle == IntPtr.Zero)
+        if(!_initialized)
         {
             try {
-                DecTalkImports.SetupResolver(Path.Join(configPath, "dectalk/dtalk_us.dll"));
-                var dictionaryPath = Path.Join(configPath, "dectalk/dtalk_us.dic");
-                AssertCall(
-                    DecTalkImports.TextToSpeechStartupExFonix(ref this.handle, -1,
-                        DtDeviceOptions.DO_NOT_USE_AUDIO_DEVICE, null, 0, dictionaryPath), "TextToSpeechStartup");
-                AssertCall(
-                    DecTalkImports.TextToSpeechOpenInMemory(this.handle, DtWaveFormat.WAVE_FORMAT_1M16),
-                    "TextToSpeechOpenInMemory");
+                DecTalkImports.SetupResolver(Path.Join(configPath, "dectalk/dtc.dll"));
+                AssertCall(DecTalkImports.TextToSpeechInit(cb), "Init");
                 // workaround for a race condition where these may be set before the library is loaded
-                AssertCall(DecTalkImports.TextToSpeechSetSpeaker(this.handle, this.voice), "TextToSpeechSetSpeaker");
-                AssertCall(DecTalkImports.TextToSpeechSetRate(this.handle, this.speed), "TextToSpeechSetRate");
-                // attempts to clean out the runtime before we use it
-                Reset(true);
+                DecTalkImports.TextToSpeechChangeVoice(this.voice); // not respected, despite calling this here, still uses Paul
+                DecTalkImports.TextToSpeechSetRate(this.speed); // respected
+                _initialized = true;
             } catch (Exception e) {
-                STLog.Log.Error(e, "DecTalk.LoadLibraryAsync(): Exception caught:");
-                this.handle = IntPtr.Zero;
+                STLog.Log.Error(e, "DecTalk.TryInitLibrary(): Exception caught:");
+                _initialized = false;
             }
         }
-        return this.handle != IntPtr.Zero;
+        return _initialized;
     }
 
-    /* Note from the DECtalk user handbook
-        Callback routines should not call TextToSpeech…() functions. If a callback
-        routine does call TextToSpeech…() functions, a crash may occur in the
-        application calling DECtalk Software. 
-    */
-    private void Callback(long param1, long param2, uint cbParam, uint uiMsg)
+    // buffer is a short*
+    // so, your byte[] will be length*2
+    private nint Callback(nint buffer, long length, int phoneme)
     {
-        STLog.Log.Debug(
-            $"DecTalk.Callback():\n"+
-            $"  param1  = {(DtError)param1}\n"+
-            $"  cbParam = {cbParam}\n"+
-            $"  uiMsg   = {uiMsg}\n"); // GIBBERISH?
-        
-        // If something wrong happens here it's prboably dunzo
-        unsafe {
-            if(uiMsg == (int)DtCallbackId.MSG_BUFFER)
-            {
-                //Task.Delay(100); // give the engine a moment to fill the buffer
-                //var buffer = (DecTalkImports.TTS_BUFFER*)param2;
-
-                // If you want to rely on the callback to process audio data, you can do so here
-                // I'm using the blocking synchronous approach so we won't be doing that.
-                // For Me: If I do use this here, remember AudioPlayer.BlendStreams MUST be false
-                /*var data = new byte[buffer->BufferLength];
-                Marshal.Copy(buffer->Data, data, 0, data.Length);
-                audioPlayer.Enqueue(TrimAudioBuffer(data));
-                Marshal.FreeHGlobal(buffer->Data);*/
+        try {
+            unsafe {
+                var data = new byte[activeBuffer.Length + (length * 2)];
+                Buffer.BlockCopy(activeBuffer, 0, data, 0, activeBuffer.Length);
+                Marshal.Copy(buffer, data, activeBuffer.Length, (int)(length*2));
+                activeBuffer = data;
             }
+        } catch (Exception e) {
+            STLog.Log.Error(e, "Exception caught");
         }
+        return 0;
     }
 }
-#endif

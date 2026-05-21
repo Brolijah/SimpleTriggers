@@ -8,7 +8,6 @@ using Dalamud.Interface.Components;
 
 namespace SimpleTriggers.Windows;
 
-#if DEBUG
 public static class DecTalkUI
 {
     public static void DrawDecTalkSettings(Plugin plugin)
@@ -18,11 +17,11 @@ public static class DecTalkUI
         {
             if(box)
             {
-                for(var i = 0; i < Enum.GetNames<DecTalkVoice>().Length; ++i)
+                foreach(var voice in Enum.GetValues<DecTalkVoice>())
                 {
-                    if(ImGui.Selectable(DecTalkVoiceHelper.ToString((DecTalkVoice)i)))
+                    if(ImGui.Selectable(DecTalkVoiceHelper.ToString(voice)))
                     {
-                        plugin.SetTTSVoice(DecTalkVoiceHelper.ToString(plugin.Configuration.DecTalk.Voice = (DecTalkVoice)i));
+                        plugin.SetTTSVoice(DecTalkVoiceHelper.ToMiniString(plugin.Configuration.DecTalk.Voice = voice));
                         plugin.Configuration.Save();
                     }
                 }
@@ -73,6 +72,4 @@ public static class DecTalkUI
             ImGui.Text("Loading library...");
         }
     }
-
 }
-#endif
