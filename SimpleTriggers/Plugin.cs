@@ -1,10 +1,12 @@
 ﻿using Dalamud.Game.Command;
+using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -13,6 +15,7 @@ using System.Reflection;
 using SimpleTriggers.Windows;
 using SimpleTriggers.TextToSpeech;
 using SimpleTriggers.Logger;
+using SimpleTriggers.Triggers;
 using System;
 
 namespace SimpleTriggers;
@@ -22,6 +25,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log {get; private set; } = null!;
 
     public string Name => "Simple Triggers";
@@ -100,7 +104,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
     }
 
-    public string GetInformationalVersion()
+    public static string GetInformationalVersion()
     {
         var ifv = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         return ifv?.InformationalVersion.ToString() ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
@@ -204,6 +208,40 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
                 TextToSpeech.SetVolume(Configuration.DecTalk.Volume);
                 break;
+        }
+    }
+
+    private unsafe void ShowGimmick(string text)
+    {
+        RaptureAtkModule.Instance()->ShowTextGimmickHint(
+            text, (RaptureAtkModule.TextGimmickHintStyle)Configuration.GimmickStyle,
+            10 * Configuration.GimmickDurationSeconds);
+    }
+
+    private void ShowToast(string text)
+    {
+        switch (Configuration.ToastStyle)
+        {
+            case ToastStyle.Normal:
+                ToastGui.ShowNormal(text, new ToastOptions { Position = ToastPosition.Bottom });
+            break;
+            case ToastStyle.Quest:
+                ToastGui.ShowQuest(text, new QuestToastOptions { Position = QuestToastPosition.Centre });
+            break;
+            case ToastStyle.Error:
+            default:
+                ToastGui.ShowError(text); // always top
+            break;
+        }
+    }
+
+    internal void ShowPopupText(string text, PopupStyle style)
+    {
+        switch (style)
+        {
+            case PopupStyle.Toast: ShowToast(text); break;
+            case PopupStyle.Gimmick: ShowGimmick(text); break;
+            default: STLog.Log.Error($"Popup value out of range {style}"); break;
         }
     }
 

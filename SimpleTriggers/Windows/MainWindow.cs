@@ -104,8 +104,8 @@ public class MainWindow : Window, IDisposable
 
         // Text box for the expression to match
         ImGui.AlignTextToFramePadding();
-        ImGui.Text("Text to Match:    ");
-        ImGui.SameLine();
+        ImGui.Text("Text to Match:");
+        ImGui.SameLine(115 * ImGuiHelpers.GlobalScale);
         // We must not allow the expression to be blank
         if(ImGui.InputText("##ExpressionTextBox", ref editing.expression, 128, ImGuiInputTextFlags.EnterReturnsTrue)
            || ImGui.IsItemDeactivatedAfterEdit())
@@ -124,8 +124,8 @@ public class MainWindow : Window, IDisposable
         }
         // Text box for the response to give back to the player
         ImGui.AlignTextToFramePadding();
-        ImGui.Text("Response Text:  ");
-        ImGui.SameLine();
+        ImGui.Text("Response Text:");
+        ImGui.SameLine(115 * ImGuiHelpers.GlobalScale);
         if(ImGui.InputText("##ResponseTextBox", ref editing.response, 128, ImGuiInputTextFlags.EnterReturnsTrue)
            || ImGui.IsItemDeactivatedAfterEdit())
         {
@@ -139,7 +139,7 @@ public class MainWindow : Window, IDisposable
         ImGui.Text("Category Name:");
         if(state.activeCategory is not null)
         {
-            ImGui.SameLine();
+            ImGui.SameLine(115 * ImGuiHelpers.GlobalScale);
             if(ImGui.InputText("##CategoryTextBox", ref editingCatName, 128, ImGuiInputTextFlags.EnterReturnsTrue)
             || ImGui.IsItemDeactivatedAfterEdit())
             {
@@ -169,6 +169,7 @@ public class MainWindow : Window, IDisposable
             trigRef.doPostInChat = editing.doPostInChat;
             updateConfig = true;
         }
+
         // Checkbox for playing Text-to-Speech
         if(ImGui.Checkbox("Text-to-Speech", ref editing.doResponseTTS))
         {
@@ -178,12 +179,13 @@ public class MainWindow : Window, IDisposable
         // If the above is toggled on, renders a button to test the Response TTS
         if(editing.doResponseTTS)
         {
-            ImGui.SameLine();
+            ImGui.SameLine(140 * ImGuiHelpers.GlobalScale);
             if(ImGuiComponents.IconButton("##TrigTestTTS", FontAwesomeIcon.Play))
             {
                 plugin.SpeakTTS(editing.response);
             }
         }
+
         // Checkbox for Playing Sound FX
         if(ImGui.Checkbox("Play Sound", ref editing.doPlaySound))
         {
@@ -193,7 +195,7 @@ public class MainWindow : Window, IDisposable
         // If the above is toggled on, renders a drop-down selection for SoundFX and a Test button
         if(editing.doPlaySound)
         {
-            ImGui.SameLine();
+            ImGui.SameLine(140 * ImGuiHelpers.GlobalScale);
             if(ImGuiComponents.IconButton("##TrigTestSFX", FontAwesomeIcon.Play))
             {
                 PlaySound.Play(SoundsExtensions.FromIdx(editing.soundFx));
@@ -203,17 +205,46 @@ public class MainWindow : Window, IDisposable
             ImGui.SetNextItemWidth(135 * ImGuiHelpers.GlobalScale);
             if(ImGui.BeginCombo("##SoundFXComboBox", SoundsExtensions.ToName(SoundsExtensions.FromIdx(editing.soundFx)), ImGuiComboFlags.HeightRegular))
             {
-                for(int i = 0; i < 16; ++i)
+                for(var i = 1; i < 17; ++i)
                 {
-                    if(ImGui.Selectable($"Sound{i+1:00}"))
+                    if(ImGui.Selectable(SoundsExtensions.ToName(SoundsExtensions.FromIdx(i))))
                     {
-                        trigRef.soundFx = editing.soundFx = i+1;
+                        trigRef.soundFx = editing.soundFx = i;
                         updateConfig = true;
                     }
                 }
                 ImGui.EndCombo();
             }
         }
+
+        // Popup options
+        if(ImGui.Checkbox("Show Popup", ref editing.doPopup))
+        {
+            trigRef.doPopup = editing.doPopup;
+            updateConfig = true;
+        }
+        // If the above is toggled on, show radio buttons for what type of popup to display
+        if(editing.doPopup)
+        {
+            ImGui.SameLine(140 * ImGuiHelpers.GlobalScale);
+            if(ImGuiComponents.IconButton("##TrigPopupTest", FontAwesomeIcon.Play))
+            {
+                if(editing.response.Length > 0) plugin.ShowPopupText(editing.response, editing.popupStyle);
+            }
+            ImGui.SameLine();
+            if(ImGui.RadioButton("Toast", ref editing.popupStyle, PopupStyle.Toast))
+            {
+                trigRef.popupStyle = editing.popupStyle;
+                updateConfig = true;
+            }
+            ImGui.SameLine();
+            if(ImGui.RadioButton("Gimmick", ref editing.popupStyle, PopupStyle.Gimmick))
+            {
+                trigRef.popupStyle = editing.popupStyle;
+                updateConfig = true;
+            }
+        }
+
         if(state.activeTrigger is null) { ImGui.EndDisabled(); }
 
         // Import Button
@@ -268,7 +299,7 @@ public class MainWindow : Window, IDisposable
 
         // Add/Copy Trigger
         (var addIcon, var addText) = (state.trigSubIndex != -1) ? (FontAwesomeIcon.Copy, "Copy") : (FontAwesomeIcon.Plus, " Add");
-        if(ImGuiComponents.IconButtonWithText(addIcon, addText, new Vector2(60 * ImGuiHelpers.GlobalScale, 0)))
+        if(ImGuiComponents.IconButtonWithText(addIcon, addText, new Vector2(60, 0)))
         {
             AddTrigger(trigRef, state.activeCategory?.Name ?? plugin.DefaultCategoryName);
             RefreshSelectionState(state.activeCategory?.Name ?? plugin.DefaultCategoryName, true);
@@ -319,7 +350,7 @@ public class MainWindow : Window, IDisposable
         if(state.trigListIndex != -1)
         {
             // Shift Up button
-            ImGui.SameLine();
+            ImGui.SameLine(0, 10 * ImGuiHelpers.GlobalScale);
             if(ImGuiComponents.IconButton(FontAwesomeIcon.ArrowUp))
             {
                 // Reordering Triggers inside a Category
@@ -483,7 +514,7 @@ public class MainWindow : Window, IDisposable
         ImGui.AlignTextToFramePadding();
         ImGui.Text("Filter: ");
         ImGui.SameLine();
-        chatFilter.Draw("##ChatFilter", 180);
+        chatFilter.Draw("##ChatFilter", 180 * ImGuiHelpers.GlobalScale);
         ImGui.SameLine();
         if(ImGuiComponents.IconButton(FontAwesomeIcon.Times)) { chatFilter.Clear(); }
         ImGui.SameLine();
@@ -551,7 +582,7 @@ public class MainWindow : Window, IDisposable
             }
 
             ImGui.Text($"How many entries should the chat history keep saved? (Max {plugin.MaxLogHistoryCeiling})");
-            ImGui.SetNextItemWidth(120 * ImGuiHelpers.GlobalScale);
+            ImGui.SetNextItemWidth(160 * ImGuiHelpers.GlobalScale);
             ImGui.DragScalar<uint>("Max Log History##MaxHistoryLength",
                 ref plugin.Configuration.MaxLogHistory,0.2f,0, plugin.MaxLogHistoryCeiling,default,ImGuiSliderFlags.AlwaysClamp);
             if(ImGui.IsItemDeactivatedAfterEdit())
@@ -560,6 +591,62 @@ public class MainWindow : Window, IDisposable
                 plugin.Configuration.Save();
             }
             ImGui.Checkbox("DEBUG: Include ChatType Info", ref plugin.doIncludeChatTypeInfo);
+            
+            // popup settings
+            ImGui.Spacing();
+            ImGui.Text("Trigger Popup Styles");
+            ImGui.SetNextItemWidth(160 * ImGuiHelpers.GlobalScale);
+            using (var box = ImRaii.Combo("Toast Style", plugin.Configuration.ToastStyle.ToString()))
+            {
+                if(box)
+                {
+                    foreach(var tst in Enum.GetValues<ToastStyle>())
+                    {
+                        if(ImGui.Selectable(tst.ToString()))
+                        {
+                            plugin.Configuration.ToastStyle = tst;
+                            plugin.Configuration.Save();
+                        }
+                    }
+                }
+            }
+            ImGui.SameLine(280 * ImGuiHelpers.GlobalScale);
+            if(ImGui.Button("Test##TestToast"))
+            {
+                plugin.ShowPopupText("This is a toast popup", PopupStyle.Toast);
+            }
+
+            ImGui.SetNextItemWidth(160 * ImGuiHelpers.GlobalScale);
+            using (var box = ImRaii.Combo("Gimmick Style", plugin.Configuration.GimmickStyle.ToString()))
+            {
+                if(box)
+                {
+                    foreach(var gs in Enum.GetValues<GimmickStyle>())
+                    {
+                        if(ImGui.Selectable(gs.ToString()))
+                        {
+                            plugin.Configuration.GimmickStyle = gs;
+                            plugin.Configuration.Save();
+                        }
+                    }
+                }
+            }
+
+            ImGui.SameLine(280 * ImGuiHelpers.GlobalScale);
+            if(ImGui.Button("Test##TestGimmick"))
+            {
+                plugin.ShowPopupText("This is a gimmick popup", PopupStyle.Gimmick);
+            }
+
+            ImGui.SetNextItemWidth(160 * ImGuiHelpers.GlobalScale);
+            ImGui.SliderInt(
+                "Gimmick Duration in Seconds", ref plugin.Configuration.GimmickDurationSeconds,
+                1, 10, default, ImGuiSliderFlags.AlwaysClamp | ImGuiSliderFlags.NoInput);
+            if(ImGui.IsItemDeactivatedAfterEdit())
+            {
+                plugin.Configuration.GimmickDurationSeconds = Math.Clamp(plugin.Configuration.GimmickDurationSeconds, 1, 10);
+                plugin.Configuration.Save();
+            }
 
             ImGui.NewLine();
         }
@@ -712,11 +799,11 @@ public class MainWindow : Window, IDisposable
             {
                 if(box)
                 {
-                    for(var i = 0; i < Enum.GetNames<TextToSpeechType>().Length; ++i)
+                    foreach(var ttst in Enum.GetValues<TextToSpeechType>())
                     {
-                        if(ImGui.Selectable(TTSProviders.ToName((TextToSpeechType)i)))
+                        if(ImGui.Selectable(TTSProviders.ToName(ttst)))
                         {
-                            plugin.Configuration.TTSProvider = (TextToSpeechType)i;
+                            plugin.Configuration.TTSProvider = ttst;
                             plugin.Configuration.Save();
                             plugin.SwapTTSBackend();
                         }

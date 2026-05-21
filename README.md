@@ -6,8 +6,9 @@
 
 ## About
 This plugin aims to provide a simple means of creating in-game triggers to chat messages.
-Responses can be done in one of the below methods or any combination of the three:
+Responses can be done in one of the below methods or using any combination:
 * Chat Message
+* Popup Toast or "Gimmick Hint"
 * In-Game SFX
 * Text-to-Speech 
   * Kokoro

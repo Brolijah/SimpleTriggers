@@ -8,7 +8,9 @@ public class TriggerEntry
     public bool doPostInChat = false;
     public bool doResponseTTS = false;
     public bool doPlaySound = false;
-    public int soundFx = 0;
+    public bool doPopup = false;
+    public PopupStyle popupStyle = PopupStyle.Toast;
+    public int soundFx = 1;
 
     public TriggerEntry()
     { }
@@ -26,6 +28,8 @@ public class TriggerEntry
         this.doPostInChat = te.doPostInChat;
         this.doResponseTTS = te.doResponseTTS;
         this.doPlaySound = te.doPlaySound;
+        this.doPopup = te.doPopup;
+        this.popupStyle = te.popupStyle;
         this.soundFx = te.soundFx;
     }
 }
