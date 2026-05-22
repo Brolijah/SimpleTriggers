@@ -1,12 +1,26 @@
 using System;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using SimpleTriggers.Logger;
-using SimpleTriggers.Triggers;
 
-namespace SimpleTriggers.Windows;
+namespace SimpleTriggers.Triggers;
 
 public static class TriggerPreset
 {
+    private static readonly List<string> defaultValues =
+    [
+        ",\"enabled\":true", // seen in TriggerCategory and TriggerEntry
+        ",\"opened\":true", // seen in TriggerCategory
+        // The below are only seen in TriggerEntry
+        ",\"doPostInChat\":false",
+        ",\"doResponseTTS\":false",
+        ",\"doPlaySound\":false",
+        ",\"doPopup\":false",
+        ",\"popupStyle\":0",
+        ",\"soundFx\":0", // older versions had this as default, it's "None"
+        ",\"soundFx\":1",
+    ];
+
     public static string buffer = "";
 
     // On Success, returns the name of the Category
@@ -45,7 +59,14 @@ public static class TriggerPreset
 
     public static string Export(TriggerCategory tc)
     {
-        return JsonConvert.SerializeObject(tc);
+        var str = JsonConvert.SerializeObject(tc);
+        foreach(var dv in defaultValues)
+        {
+            str = str.Replace(dv, "");
+        }
+        // some final cleanup, puts line breaks in for readability
+        str = str.Replace("\":[{", "\":[\n{");
+        return str.Replace("},", "},\n");
     }
 
 }
