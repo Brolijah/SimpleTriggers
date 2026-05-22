@@ -21,8 +21,6 @@ public static class TriggerPreset
         ",\"soundFx\":1",
     ];
 
-    public static string buffer = "";
-
     // On Success, returns the name of the Category
     // On Failure, returns null
     public static string? Import(string enc, Plugin plugin)
@@ -51,7 +49,6 @@ public static class TriggerPreset
                     tc.Add(te);
                 }
             }
-            buffer = "";
         }
 
         return import?.Name;

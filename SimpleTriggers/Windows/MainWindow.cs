@@ -38,6 +38,7 @@ public class MainWindow : Window, IDisposable
     private readonly Plugin plugin;
     private ImGuiTextFilter chatFilter;
     private SelectionState state;
+    private string importBuffer;
 
     public MainWindow(Plugin plugin, string version)
         : base($"{plugin.Name} v{version}##WindowSTrigger")
@@ -50,6 +51,7 @@ public class MainWindow : Window, IDisposable
 
         this.plugin = plugin;
         this.state = new();
+        this.importBuffer = "";
         AudioDevicesUI.RefreshDeviceList();
     }
 
@@ -251,6 +253,7 @@ public class MainWindow : Window, IDisposable
         if(ImGuiComponents.IconButtonWithText(FontAwesomeIcon.FileImport, "Import"))
         {
             ImGui.OpenPopup("Import");
+            importBuffer = "";
         }
         using (var popup = ImRaii.Popup("Import"))
         {
@@ -259,16 +262,18 @@ public class MainWindow : Window, IDisposable
                 bool doImport = false;
                 ImGui.Text("Paste below:");
                 ImGui.SetNextItemWidth(200 * ImGuiHelpers.GlobalScale);
-                if(ImGui.InputText("##ImportTriggerField", ref TriggerPreset.buffer, 8192, ImGuiInputTextFlags.EnterReturnsTrue)) doImport = true;
-                ImGui.SameLine(); if (ImGui.Button("OK")) doImport = true;
+                if(ImGui.InputText("##ImportTriggerField", ref importBuffer, 8192, ImGuiInputTextFlags.EnterReturnsTrue)) doImport = true;
+                ImGui.SameLine();
+                if (ImGui.Button("OK")) doImport = true;
                 if(doImport)
                 {
-                    if(TriggerPreset.buffer.Length > 0)
+                    if(importBuffer.Length > 0)
                     {
-                        var name = TriggerPreset.Import(TriggerPreset.buffer, plugin);
+                        var name = TriggerPreset.Import(importBuffer, plugin);
                         if(name is not null) RefreshSelectionState(name, true, true);
                         plugin.Configuration.Save();
                         ImGui.CloseCurrentPopup();
+                        importBuffer = "";
                     }
                 }
             }
