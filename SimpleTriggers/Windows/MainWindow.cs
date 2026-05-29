@@ -112,9 +112,10 @@ public class MainWindow : Window, IDisposable
         if(ImGui.InputText("##ExpressionTextBox", ref editing.expression, 128, ImGuiInputTextFlags.EnterReturnsTrue)
            || ImGui.IsItemDeactivatedAfterEdit())
         {
-            if(editing.expression.Length != 0)
+            var trimmed = editing.expression.Trim();
+            if(trimmed.Length != 0)
             {
-                trigRef.expression = editing.expression;
+                trigRef.expression = trimmed;
                 if(state.activeTrigger is null)
                 {
                     AddTrigger(trigRef, editingCatName);
@@ -124,6 +125,7 @@ public class MainWindow : Window, IDisposable
             }
             updateConfig = true;
         }
+
         // Text box for the response to give back to the player
         ImGui.AlignTextToFramePadding();
         ImGui.Text("Response Text:");
@@ -131,7 +133,7 @@ public class MainWindow : Window, IDisposable
         if(ImGui.InputText("##ResponseTextBox", ref editing.response, 128, ImGuiInputTextFlags.EnterReturnsTrue)
            || ImGui.IsItemDeactivatedAfterEdit())
         {
-            trigRef.response = editing.response;
+            trigRef.response = editing.response.Trim();
             updateConfig = true;
         }
 
@@ -145,7 +147,8 @@ public class MainWindow : Window, IDisposable
             if(ImGui.InputText("##CategoryTextBox", ref editingCatName, 128, ImGuiInputTextFlags.EnterReturnsTrue)
             || ImGui.IsItemDeactivatedAfterEdit())
             {
-                if(editingCatName.Length != 0)
+                var trimmed = editingCatName.Trim();
+                if(trimmed.Length != 0)
                 {
                     // Let's assume we're trying to reassign the category for the current trigger
                     if(state.activeTrigger is not null)
@@ -154,12 +157,24 @@ public class MainWindow : Window, IDisposable
                         state.activeCategory.Remove(state.activeTrigger);
                         if(state.activeCategory.IsEmpty()) { plugin.Configuration.TriggerTree.Remove(state.activeCategory); }
                         // Insert trigger into new category (existing or will create a new one)
-                        AddTrigger(state.activeTrigger, editingCatName);
-                        RefreshSelectionState(editingCatName, true);
-                        plugin.Configuration.Save();
+                        AddTrigger(state.activeTrigger, trimmed);
+                        RefreshSelectionState(trimmed, true);
+                    } else {
+                        // Verify the new category name doesn't already exist
+                        // weird things happen when two categories exist with the same name
+                        var existingCat = plugin.Configuration.TriggerTree[trimmed];
+                        if(state.activeCategory != existingCat && existingCat is not null)
+                        {
+                            foreach(var t in state.activeCategory.Triggers)
+                            {
+                                existingCat.Triggers.Add(t);
+                            }
+                            plugin.Configuration.TriggerTree.Remove(state.activeCategory);
+                            RefreshSelectionState(trimmed, true, true);
+                        }
                     }
-                    state.activeCategory.Name = editingCatName;
-                    updateConfig = true;   
+                    state.activeCategory.Name = trimmed;
+                    updateConfig = true;
                 }
             }
         }
