@@ -15,10 +15,9 @@ Responses can be done in one of the below methods or using any combination:
   * Windows System
   * DECtalkMini
 
-New Triggers can be created by either clicking the "Add" button on the Triggers tab or saving a chat log message on the Chat History tab.
-Triggers may also be shared and imported using the Import/Export buttons.
-Chat logging is disabled by default every time the plugin starts, and once enabled you can search for specific messages it has recorded. This may be useful if you're unsure of the exact message you want to create a trigger for but only know some of the words. You can also configure how many messages should be stored at a time.
-Message history is never saved outside of the plugin running and is lost when the plugin is disabled.
+New Triggers can be created by either clicking the "Add" button on the Triggers tab or saving a chat log message on the Chat History tab.  
+Chat logging is disabled by default every time the plugin starts, and once enabled you can search for specific messages it has recorded. This may be useful if you're unsure of the exact message you want to create a trigger for but only know some of the words. You can also configure how many messages should be stored at a time. Message history is never saved outside of the plugin running and is lost when the plugin is disabled.  
+Triggers may also be shared and imported using the Import/Export buttons.  
 
 * Commands:
   * `/simpletriggers` or `/strig`
@@ -33,7 +32,8 @@ Message history is never saved outside of the plugin running and is lost when th
 
 
 ### Images
-![](https://i.imgur.com/QCiTMNO.png) ![](https://i.imgur.com/fKSEDSk.png)
+![](https://i.imgur.com/95HMcgE.png)  
+![](https://i.imgur.com/XVAL4Eu.png)  
 
 
 ## Known Issues
@@ -44,7 +44,7 @@ Message history is never saved outside of the plugin running and is lost when th
 ## Credits
 * Kokoro C# package from [Lyrcaxis/KokoroSharp](https://github.com/Lyrcaxis/KokoroSharp)
   * Original model: [Kokoro TTS](https://huggingface.co/hexgrad/Kokoro-82M)
-* DECtalkMini from the latest release at [dectalk/dectalkmini](https://github.com/dectalk/dectalkmini)
+* DECtalkMini from [dectalk/dectalkmini](https://github.com/dectalk/dectalkmini)
 * Sound Effects functions from [Ottermandias/ChatAlerts](https://github.com/Ottermandias/ChatAlerts)
 * Extended chat type info from [Infiziert90/ChatTwo](https://github.com/Infiziert90/ChatTwo)
 * Pre-Built English IPA Dictionary from [open-dict-data/ipa-dict](https://github.com/open-dict-data/ipa-dict)
