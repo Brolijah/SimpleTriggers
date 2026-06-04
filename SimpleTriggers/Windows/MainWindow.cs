@@ -199,7 +199,7 @@ public class MainWindow : Window, IDisposable
             ImGui.SameLine(140 * ImGuiHelpers.GlobalScale);
             if(ImGuiComponents.IconButton("##TrigTestTTS", FontAwesomeIcon.Play))
             {
-                plugin.SpeakTTS(editing.response);
+                plugin.SpeakTTS(DummyFormat(editing.response, editing.expression));
             }
         }
 
@@ -246,7 +246,8 @@ public class MainWindow : Window, IDisposable
             ImGui.SameLine(140 * ImGuiHelpers.GlobalScale);
             if(ImGuiComponents.IconButton("##TrigPopupTest", FontAwesomeIcon.Play))
             {
-                if(editing.response.Length > 0) plugin.ShowPopupText(editing.response, editing.popupStyle);
+                if(editing.response.Length > 0)
+                    plugin.ShowPopupText(DummyFormat(editing.response, editing.expression), editing.popupStyle);
             }
             ImGui.SameLine();
             if(ImGui.RadioButton("Toast", ref editing.popupStyle, PopupStyle.Toast))
@@ -929,5 +930,14 @@ public class MainWindow : Window, IDisposable
             state.activeTrigger = stopAtCategory ? null : state.activeCategory.Triggers.ElementAt(state.trigSubIndex);
             state.activeCategory.opened = openActiveCategory;
         }
+    }
+
+    private static string DummyFormat(string text, string exp)
+    {
+        var ret = text.Replace("\uFF05", "%"); // replaces full width with ascii 
+        ret = ret.Replace("%sender%", "John Finalfantasy", StringComparison.CurrentCultureIgnoreCase);
+        ret = ret.Replace("%expression%", exp, StringComparison.CurrentCultureIgnoreCase);
+        ret = ret.Replace("%message%", "This is a sample message.", StringComparison.CurrentCultureIgnoreCase);
+        return ret.Trim();
     }
 }

@@ -56,7 +56,7 @@ internal class ChatListener : IDisposable
         if(plugin.Configuration.IgnoreDamageAndHealing && (logKind is ChatType.Damage or ChatType.Miss or ChatType.Healing))
         { return; }
         
-        var msgStr = SanitizeString(chatMessage.Message.ToString());
+        var msgStr = SanitizeString(chatMessage.OriginalMessage.ToString());
         if(plugin.Configuration.EnableTriggers)
         {
             foreach(var category in plugin.Configuration.TriggerTree)
@@ -67,12 +67,17 @@ internal class ChatListener : IDisposable
                     {
                         if(trig.enabled)
                         {
-                            var expression = trig.expression;
-                            if(msgStr.ReplaceLineEndings(" ").Contains(expression, StringComparison.CurrentCultureIgnoreCase))
+                            if(msgStr.ReplaceLineEndings(" ").Contains(trig.expression, StringComparison.CurrentCultureIgnoreCase))
                             {
-                                if(trig.doResponseTTS && (trig.response.Length > 0))
+                                var formattedResponse = trig.response.Replace("\uFF05", "%"); // replaces full width with ascii 
+                                formattedResponse = formattedResponse.Replace("%sender%", chatMessage.OriginalSender.ToString(), StringComparison.CurrentCultureIgnoreCase);
+                                formattedResponse = formattedResponse.Replace("%expression%", trig.expression, StringComparison.CurrentCultureIgnoreCase);
+                                formattedResponse = formattedResponse.Replace("%message%", msgStr, StringComparison.CurrentCultureIgnoreCase); // keep this last
+                                formattedResponse = formattedResponse.Trim();
+
+                                if(trig.doResponseTTS && (formattedResponse.Length > 0))
                                 {
-                                    plugin.SpeakTTS(trig.response);
+                                    plugin.SpeakTTS(formattedResponse);
                                 }
                                 
                                 if(trig.doPlaySound && trig.soundFx > 0)
@@ -80,14 +85,14 @@ internal class ChatListener : IDisposable
                                     PlaySound.Play(SoundsExtensions.FromIdx(trig.soundFx));
                                 }
 
-                                if(trig.doPostInChat && (trig.response.Length > 0))
+                                if(trig.doPostInChat && (formattedResponse.Length > 0))
                                 {
-                                    plugin.PrintChatMsg(trig.response);
+                                    plugin.PrintChatMsg(formattedResponse);
                                 }
 
-                                if(trig.doPopup && (trig.response.Length > 0))
+                                if(trig.doPopup && (formattedResponse.Length > 0))
                                 {
-                                    plugin.ShowPopupText(trig.response, trig.popupStyle);
+                                    plugin.ShowPopupText(formattedResponse, trig.popupStyle);
                                 }
                             }
                         }
