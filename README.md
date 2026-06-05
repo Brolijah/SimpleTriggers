@@ -30,6 +30,10 @@ Triggers may also be shared and imported using the Import/Export buttons.
     * `/ststop`
     * `/stspeak <phrase>`
 
+Additionally, the "Response Text" field supports these substitutions:
+* `%sender%` - replaces with whoever sent the message that activated the trigger (player messages only) 
+* `%expression%` - replaces with the matched expression specified in the trigger
+* `%message%` - replaces with the entire message that activated the trigger
 
 ### Images
 ![](https://i.imgur.com/95HMcgE.png)  
