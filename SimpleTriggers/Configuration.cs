@@ -18,7 +18,7 @@ public class KokoroConfig
 
 public class WinSpeechConfig
 {
-    public string Voice = "";
+    public string Voice = ""; // depends on what the user has installed
     public int Speed = 0; // [-5, +5]
     public int Volume = 100; // [0, 100]
     public WinSpeechConfig() {}
@@ -31,6 +31,15 @@ public class DecTalkConfig
     public int Volume = 100; // [0, 100]
     public DecTalkConfig() {}
 }
+
+public class ESpeakNgConfig
+{
+    public string Voice = "en";
+    public int Speed = 175;
+    public int Volume = 100;
+    public ESpeakNgConfig() {}
+}
+
 
 [Serializable]
 public class Configuration : IPluginConfiguration
@@ -52,6 +61,7 @@ public class Configuration : IPluginConfiguration
     public KokoroConfig Kokoro { get; set; } = new();
     public WinSpeechConfig WinSpeech { get; set; } = new();
     public DecTalkConfig DecTalk { get; set; } = new();
+    public ESpeakNgConfig ESpeakNg { get; set; } = new();
     public TriggerTree TriggerTree { get; set; } = new();
 
     // The below exists just to make saving less cumbersome

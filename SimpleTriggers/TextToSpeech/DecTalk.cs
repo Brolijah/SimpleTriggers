@@ -12,7 +12,7 @@ namespace SimpleTriggers.TextToSpeech;
 
 public class DecTalk : ITextToSpeech {
     private bool _initialized = false;
-    private DecTalkImports.CallbackDelegate cb;
+    private DecTalkNative.CallbackDelegate cb;
     private readonly Task<bool> libraryTask;
     private readonly AudioPlayer audioPlayer;
     private readonly CancellationTokenSource cts = new();
@@ -168,7 +168,7 @@ public class DecTalk : ITextToSpeech {
         this.voice = voice;
         if(!IsInitialized()) return;
         try {
-            AssertCall(DecTalkImports.TextToSpeechChangeVoice(voice), "ChangeVoice");
+            AssertCall(DecTalkNative.TextToSpeechChangeVoice(voice), "ChangeVoice");
         } catch (Exception e) {
             STLog.Log.Error(e, "Exception caught:");
         }
@@ -183,7 +183,7 @@ public class DecTalk : ITextToSpeech {
     {
         this.speed = (int)speed;
         if(!IsInitialized()) return;
-        DecTalkImports.TextToSpeechSetRate(this.speed);
+        DecTalkNative.TextToSpeechSetRate(this.speed);
     }
 
     public void SetLanguage(string lang)
@@ -201,17 +201,17 @@ public class DecTalk : ITextToSpeech {
 
     private void Reset()
     {
-        AssertCall(DecTalkImports.TextToSpeechReset(), "Reset");
+        AssertCall(DecTalkNative.TextToSpeechReset(), "Reset");
     }
 
     private void SpeakInternal(string text)
     {
-        AssertCall(DecTalkImports.TextToSpeechStart(text, 0, DtWaveFormat.WAVE_FORMAT_1M16), "Start");
+        AssertCall(DecTalkNative.TextToSpeechStart(text, 0, DtWaveFormat.WAVE_FORMAT_1M16), "Start");
     }
 
     private void Sync()
     {
-        AssertCall(DecTalkImports.TextToSpeechSync(), "Sync");
+        AssertCall(DecTalkNative.TextToSpeechSync(), "Sync");
     }
 
     private static void AssertCall(int value, string method) {
@@ -223,11 +223,11 @@ public class DecTalk : ITextToSpeech {
         if(!_initialized)
         {
             try {
-                DecTalkImports.SetupResolver(Path.Join(configPath, "dectalk/dtc.dll"));
-                AssertCall(DecTalkImports.TextToSpeechInit(cb), "Init");
+                DecTalkNative.SetupResolver(Path.Join(configPath, "dectalk/dtc.dll"));
+                AssertCall(DecTalkNative.TextToSpeechInit(cb), "Init");
                 // workaround for a race condition where these may be set before the library is loaded
-                DecTalkImports.TextToSpeechChangeVoice(this.voice); // not respected, despite calling this here, still uses Paul
-                DecTalkImports.TextToSpeechSetRate(this.speed); // respected
+                DecTalkNative.TextToSpeechChangeVoice(this.voice); // not respected, despite calling this here, still uses Paul
+                DecTalkNative.TextToSpeechSetRate(this.speed); // respected
                 _initialized = true;
             } catch (Exception e) {
                 STLog.Log.Error(e, "DecTalk.TryInitLibrary(): Exception caught:");

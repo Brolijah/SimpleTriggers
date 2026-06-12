@@ -142,6 +142,7 @@ public class STKokoro : ITextToSpeech
                 int[]? tokens;
                 if(extra) tokens = Tokenizer.Tokenize(message, lang);
                 else      tokens = Tokenizer.TokenizePhonemes(ipa.EnglishToIPA(message).ToCharArray());
+                //var tokens = Tokenizer.TokenizePhonemes(ESpeakNgWrapper.ToPhonemes(message).ToCharArray());
 
                 var tokensList = SegmentationSystem.SplitToSegments(tokens, new()
                 {

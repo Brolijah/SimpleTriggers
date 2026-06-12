@@ -62,6 +62,7 @@ public sealed class Plugin : IDalamudPlugin
         ChatLog = new Queue<string>((int)MaxLogHistoryCeiling);
         ChatListener = new ChatListener(this, ChatGui);
 
+        //ESpeakNgWrapper.Initialize(PluginInterface.AssemblyLocation.Directory?.FullName!);
         AudioPlayer = new AudioPlayer(Configuration.AudioOutputDevice, Configuration.AudioBackend) { BlendStreams=Configuration.BlendAudioStreams };
         SwapTTSBackend();
 
@@ -207,6 +208,14 @@ public sealed class Plugin : IDalamudPlugin
                 TextToSpeech.SetVoice(DecTalkVoiceHelper.ToMiniString(Configuration.DecTalk.Voice));
                 TextToSpeech.SetSpeed(Configuration.DecTalk.Speed);
                 TextToSpeech.SetVolume(Configuration.DecTalk.Volume);
+                break;
+            case TextToSpeechType.eSpeakNG:
+                TextToSpeech = new ESpeakNg();
+                //TextToSpeech.SetVoice(Configuration.ESpeakNg.Voice);
+                //TextToSpeech.SetSpeed(Configuration.ESpeakNg.Speed);
+                TextToSpeech.SetVolume(Configuration.ESpeakNg.Volume);
+                break;
+            default:
                 break;
         }
     }
